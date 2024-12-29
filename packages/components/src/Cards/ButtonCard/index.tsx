@@ -148,6 +148,13 @@ const LayoutBetween = styled.div`
   }
 `;
 
+const FooterOuter = styled.div`
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: flex-end;
+`;
+
 const Footer = styled.div`
   display: flex;
   align-items: flex-start;
@@ -356,20 +363,22 @@ function _ButtonCard<E extends EntityName>({
           )}
         </LayoutBetween>
         {isDefaultLayout && (
-          <Footer className="footer">
-            {title && <Title className="title">{title}</Title>}
-            {!hideDetails && description && (
-              <Description className="description">
-                {description}
-                {entity && !hideState ? ` - ${renderState()}` : ""}
-              </Description>
-            )}
-            {!hideDetails && entity && !hideLastUpdated && (
-              <Description className="description secondary">
-                {localize("last_updated")}: {entity.custom.relativeTime}
-              </Description>
-            )}
-          </Footer>
+          <FooterOuter>
+            <Footer className="footer">
+              {title && <Title className="title">{title}</Title>}
+              {!hideDetails && description && (
+                <Description className="description">
+                  {description}
+                  {entity && !hideState ? ` - ${renderState()}` : ""}
+                </Description>
+              )}
+              {!hideDetails && entity && !hideLastUpdated && (
+                <Description className="description secondary">
+                  {localize("last_updated")}: {entity.custom.relativeTime}
+                </Description>
+              )}
+            </Footer>
+          </FooterOuter>
         )}
         {children && <div className="children">{children}</div>}
       </Contents>

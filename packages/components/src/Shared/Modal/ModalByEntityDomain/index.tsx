@@ -31,7 +31,6 @@ import { computeDomain } from "@utils/computeDomain";
 import { lowerCase, startCase } from "lodash";
 import { Suspense, lazy, useCallback, useMemo, useRef, useState, ReactNode } from "react";
 import type { ModalProps } from "..";
-import { ModalAlarmControls } from "./AlarmControlPanel";
 
 const Separator = styled.div`
   height: 30px;
