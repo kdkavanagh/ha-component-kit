@@ -126,9 +126,16 @@ const LayoutBetween = styled.div`
   }
 `;
 
+const FooterOuter = styled.div`
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: flex-end;
+`;
+
 const Footer = styled.div`
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   flex-direction: row;
   margin-top: 20px;
@@ -265,6 +272,7 @@ function _ButtonCard<E extends EntityName>({
       onClick={onClick}
       className={`${className ?? ""} ${defaultLayout ?? "default"} button-card`}
       cssStyles={`
+        background-color: ${entity && entity.state == ON ? "var(--ha-50-a8)" : "var(--ha-S700-a3)"};
         ${globalComponentStyle.buttonCard ?? ""}
         ${cssStyles ?? ""}
       `}
@@ -290,8 +298,15 @@ function _ButtonCard<E extends EntityName>({
             </Toggle>
           )}
           {isSlimLayout && (
-            <Column fullWidth alignItems={defaultLayout === "slim-vertical" ? "center" : "flex-start"}>
-              <Description className="description">{description}</Description>
+            <Column style={{ width: "70%" }} alignItems={defaultLayout === "slim-vertical" ? "left" : "flex-start"}>
+              <Description
+                className="description"
+                textColor={entity ? (on ? "var(--ha-S700)" : "var(--ha-S50-contrast)") : on ? "var(--ha-A400)" : "var(--ha-S50-contrast)"}
+                textSize="1.5vw"
+                textAlign="left"
+              >
+                {description}
+              </Description>
               {!hideDetails && (
                 <Title className={`title ${defaultLayout ?? ""}`}>
                   {title} {renderState()}
@@ -302,18 +317,31 @@ function _ButtonCard<E extends EntityName>({
           )}
         </LayoutBetween>
         {isDefaultLayout && (
-          <Footer className="footer">
-            <Title className="title">
-              {!hideDetails && title && (
-                <Title className="title">
-                  {title}
-                  {isUnavailable && entity && !hideState ? ` - ${entity.state}` : ""}
-                </Title>
-              )}
-              {description && <Description className="description">{description}</Description>}
-              {!hideDetails && entity && !hideLastUpdated && <Title className="title">Updated: {entity.custom.relativeTime}</Title>}
-            </Title>
-          </Footer>
+          <FooterOuter>
+            <Footer className="footer">
+              <Title className="title">
+                {!hideDetails && title && (
+                  <Title className="title">
+                    {title}
+                    {isUnavailable && entity && !hideState ? ` - ${entity.state}` : ""}
+                  </Title>
+                )}
+                {description && (
+                  <Description
+                    className="description"
+                    textColor={
+                      entity ? (on ? "var(--ha-S700)" : "var(--ha-S500-contrast)") : on ? "var(--ha-A400)" : "var(--ha-S500-contrast)"
+                    }
+                    textSize="1.5vw"
+                    textAlign="left"
+                  >
+                    {description}
+                  </Description>
+                )}
+                {!hideDetails && entity && !hideLastUpdated && <Title className="title">Updated: {entity.custom.relativeTime}</Title>}
+              </Title>
+            </Footer>
+          </FooterOuter>
         )}
         {children && <div className="children">{children}</div>}
       </Contents>
