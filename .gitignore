@@ -28,8 +28,13 @@ coverage
 
 supported-types.d.ts
 .ha-repo-cache
+.cache
+.env
 ha-dashboard
 packages/core/.env
 
 hakit/config
+hakit/server/hakit-designer
 hakit/server/options.json
+trace
+trace/*

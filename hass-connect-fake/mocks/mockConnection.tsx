@@ -40,12 +40,12 @@ export const mocked = {
   },
   subscribeEntities: jest.fn().mockImplementation((_: null, subScribeFn: (entities: HassEntities) => void) => {
     subScribeFn(ENTITIES);
-  })
+  }),
 }
 
 jest.mock('home-assistant-js-websocket', () => mocked);
 
-import { HassConnect } from '@core';
+import { HassConnect } from '@hakit/core';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const onReady = jest.fn();
