@@ -12,7 +12,14 @@ import type {
   MessageBase,
 } from "home-assistant-js-websocket";
 import { Connection, HassEntity } from "home-assistant-js-websocket";
-import type { ServiceData, DomainService, SnakeOrCamelDomains, Target, Route, Store, ServiceResponse } from "@hakit/core";
+import type {
+  ServiceData,
+  DomainService,
+  SnakeOrCamelDomains,
+  Target,
+  Route,
+  Store,
+} from "@hakit/core";
 import { isArray, isEmpty } from "lodash";
 import { HassContext, updateLocales, locales } from '@hakit/core';
 import { entities as ENTITIES } from './mocks/mockEntities';
@@ -327,9 +334,9 @@ function HassProvider({
       service,
       domain,
       target,
-      serviceData,
-    }: CallServiceArgs<T, M>): Promise<boolean | ServiceResponse> => {
-      if (typeof target !== "string" && !isArray(target)) return true;
+      serviceData
+    }: CallServiceArgs<T, M>) => {
+      if (typeof target !== 'string' && !isArray(target)) return;
       const now = new Date().toISOString();
       if (domain in fakeApi) {
         const api = fakeApi[domain as 'scene'] as (params: ServiceArgs<'scene'>) => boolean;
@@ -344,21 +351,21 @@ function HassProvider({
           // @ts-expect-error - don't know domain
           serviceData,
         });
-        if (!skip) return true;
+        if (!skip) return;
       }
-      if (typeof target !== "string") return true;
+      if (typeof target !== 'string') return;
       const dates = {
         last_changed: now,
         last_updated: now,
-      };
-      switch (service) {
-        case "turn_on":
-        case "turnOn":
+      }
+      switch(service) {
+        case 'turn_on':
+        case 'turnOn':
           const attributes = {
             ...entities[target].attributes,
-            ...(serviceData || {}),
-          };
-          setEntities({
+            ...serviceData || {},
+          }
+          return setEntities({
             ...entities,
             [target]: {
               ...entities[target],
@@ -366,52 +373,48 @@ function HassProvider({
                 ...attributes,
               },
               ...dates,
-              state: "on",
-            },
-          });
-          return true;
-        case "turn_off":
-        case "turnOff":
-          setEntities({
+              state: 'on'
+            }
+          })
+        case 'turn_off':
+        case 'turnOff':
+          return setEntities({
             ...entities,
             [target]: {
               ...entities[target],
               attributes: {
                 ...entities[target].attributes,
-                ...(serviceData || {}),
+                ...serviceData || {},
               },
               ...dates,
-              state: "off",
-            },
-          });
-          return true;
-        case "toggle":
-          setEntities({
+              state: 'off'
+            }
+          })
+        case 'toggle':
+          return setEntities({
             ...entities,
             [target]: {
               ...entities[target],
               attributes: {
                 ...entities[target].attributes,
-                ...(serviceData || {}),
-                brightness: entities[target].state === "on" ? entities[target].attributes.brightness : 0,
+                ...serviceData || {},
+                brightness: entities[target].state === 'on' ? entities[target].attributes.brightness : 0,
               },
               ...dates,
-              state: entities[target].state === "on" ? "off" : "on",
-            },
+              state: entities[target].state === 'on' ? 'off' : 'on'
+            }
           });
-          return true;
         default:
-          setEntities({
+          return setEntities({
             ...entities,
             [target]: {
               ...entities[target],
               ...dates,
-            },
+            }
           });
-          return true;
       }
     },
-    [entities, setEntities],
+    [entities, setEntities]
   );
 
   useEffect(() => {
