@@ -1,11 +1,12 @@
 import styled from "@emotion/styled";
 import { useMemo, useRef, useCallback, useEffect, useState } from "react";
-import { type HassEntityWithService, useHass, useEntity } from "@hakit/core";
+import { type HassEntityWithService, useHass, useEntity, FilterByDomain, EntityName } from "@hakit/core";
 import { Icon, type IconProps } from "@iconify/react";
 import { Row, Column, fallback, CardBase, type CardBaseProps, type AvailableQueries } from "@components";
 import { createDateFormatter, daySuffix } from "./formatter";
 import { ErrorBoundary } from "react-error-boundary";
 import { FormatFunction } from "./types";
+import { Time, AmOrPm } from "./shared";
 
 const Card = styled(CardBase)`
   cursor: default;
@@ -27,21 +28,6 @@ const Contents = styled.div`
       }
     }
   }
-`;
-
-const Time = styled.h4`
-  all: unset;
-  font-family: var(--ha-font-family);
-  font-size: 2rem;
-  color: var(--ha-S200-contrast);
-  font-weight: 400;
-`;
-const AmOrPm = styled.h4`
-  all: unset;
-  font-family: var(--ha-font-family);
-  font-size: 2rem;
-  color: var(--ha-S400-contrast);
-  font-weight: 300;
 `;
 
 function convertTo12Hour(time: string) {
@@ -87,9 +73,13 @@ function formatDate(dateString: string): string {
 
   return formattedDate;
 }
-type CustomFormatter = (date: Date, formatter: FormatFunction) => string;
-type OmitProperties = "title" | "as" | "active" | "ref" | "entity" | "service" | "serviceData" | "longPressCallback" | "modalProps";
+type CustomFormatter = (date: Date, formatter: FormatFunction) => React.ReactNode;
+type OmitProperties = "title" | "as" | "active" | "entity" | "service" | "serviceData" | "longPressCallback" | "modalProps";
 export interface TimeCardProps extends Omit<CardBaseProps<"div">, OmitProperties> {
+  /** provide a custom entity to read the time from, if not found/provided it will update from machine time @default "sensor.time" */
+  timeEntity?: FilterByDomain<EntityName, "sensor">;
+  /** provide a custom entity to read the date from, if not found/provided it will update from machine time @default "sensor.date" */
+  dateEntity?: FilterByDomain<EntityName, "sensor">;
   /** time format, by providing this it will bypass the sensor.time entity if available, for formatting options @see https://www.npmjs.com/package/intl-dateformat#formatters  @default "hh:mm a", you can also provide a custom function which will call every time the component re-renders */
   timeFormat?: string | CustomFormatter;
   /** date format, by providing this it will bypass the sensor.date entity if available, for formatting options @see https://www.npmjs.com/package/intl-dateformat#formatters  @default "dddd, MMMM DD YYYY", you can also provide a custom function which will call every time the component re-renders */
@@ -112,12 +102,14 @@ export interface TimeCardProps extends Omit<CardBaseProps<"div">, OmitProperties
   onClick?: (entity: HassEntityWithService<"sensor">, event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
 }
 
-const DEFAULT_TIME_FORMAT = "hh:mm a";
+const DEFAULT_TIME_FORMAT = "hh:mm A";
 const DEFAULT_DATE_FORMAT = "dddd, MMMM DD YYYY";
 
 const customFormatter = createDateFormatter({});
 
-function _TimeCard({
+function InternalTimeCard({
+  timeEntity,
+  dateEntity,
   timeFormat,
   dateFormat,
   throttleTime = 1000,
@@ -137,15 +129,16 @@ function _TimeCard({
 }: TimeCardProps): React.ReactNode {
   const [currentTime, setCurrentTime] = useState(new Date());
   const previousTimeRef = useRef<number>(Date.now());
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(undefined);
   const { useStore } = useHass();
   const globalComponentStyle = useStore((state) => state.globalComponentStyles);
-  const timeSensor = useEntity("sensor.time", {
+  const timeSensor = useEntity(timeEntity ?? "sensor.time", {
     returnNullIfNotFound: true,
   });
-  const dateSensor = useEntity("sensor.date", {
+  const dateSensor = useEntity(dateEntity ?? "sensor.date", {
     returnNullIfNotFound: true,
   });
+  const dateIcon = useMemo(() => icon || dateSensor?.attributes?.icon || "mdi:calendar", [icon, dateSensor]);
   const [formatted, amOrPm] = useMemo(() => {
     const parts = convertTo12Hour(timeSensor?.state ?? "00:00");
     const hour = parts.find((part) => part.type === "hour");
@@ -155,25 +148,41 @@ function _TimeCard({
   }, [timeSensor?.state]);
   const hasOnClick = typeof onClick === "function";
 
-  const timeValue =
-    timeSensor && !timeFormat ? (
-      <>
-        <Time className="time">{formatted}</Time>
-        <AmOrPm className="time-suffix">{amOrPm}</AmOrPm>
-      </>
-    ) : (
-      <Time className="time">
-        {typeof timeFormat === "function"
-          ? timeFormat(currentTime, customFormatter)
-          : customFormatter(currentTime, timeFormat ?? DEFAULT_TIME_FORMAT)}
-      </Time>
-    );
-  const dateValue =
-    dateSensor && !dateFormat
-      ? formatDate(dateSensor.state)
-      : typeof dateFormat === "function"
-        ? dateFormat(currentTime, customFormatter)
-        : customFormatter(currentTime, dateFormat ?? DEFAULT_DATE_FORMAT);
+  const timeValue = useMemo(() => {
+    if (timeSensor && !timeFormat) {
+      return (
+        <>
+          <Time className="time">{formatted}</Time>
+          <AmOrPm className="time-suffix">{amOrPm}</AmOrPm>
+        </>
+      );
+    }
+    try {
+      return (
+        <Time className="time">
+          {typeof timeFormat === "function"
+            ? timeFormat(currentTime, customFormatter)
+            : customFormatter(currentTime, timeFormat ?? DEFAULT_TIME_FORMAT)}
+        </Time>
+      );
+    } catch (e) {
+      console.error("Time formatting error", e);
+      return <Time className="time">{customFormatter(currentTime, DEFAULT_TIME_FORMAT)}</Time>;
+    }
+  }, [amOrPm, currentTime, formatted, timeFormat, timeSensor]);
+
+  const dateValue = useMemo(() => {
+    try {
+      return dateSensor && !dateFormat
+        ? formatDate(dateSensor.state)
+        : typeof dateFormat === "function"
+          ? dateFormat(currentTime, customFormatter)
+          : customFormatter(currentTime, dateFormat ?? DEFAULT_DATE_FORMAT);
+    } catch (e) {
+      console.error("Date formatting error", e);
+      return customFormatter(currentTime, DEFAULT_DATE_FORMAT);
+    }
+  }, [currentTime, dateFormat, dateSensor]);
 
   const updateClock = useCallback(() => {
     const now = Date.now();
@@ -187,10 +196,12 @@ function _TimeCard({
   }, [throttleTime]);
 
   useEffect(() => {
-    if (!timeFormat && !dateFormat) return; // let home assistant trigger updates
+    const hasEntities = timeSensor || dateSensor;
+    const hasFormatters = timeFormat || dateFormat;
+    if (hasEntities && !hasFormatters) return; // let home assistant trigger updates
     requestRef.current = requestAnimationFrame(updateClock);
     return () => cancelAnimationFrame(requestRef.current!);
-  }, [updateClock, timeFormat, dateFormat]);
+  }, [updateClock, timeFormat, dateFormat, timeSensor, dateSensor]);
 
   return (
     <Card
@@ -200,7 +211,7 @@ function _TimeCard({
         ${cssStyles ?? ""}
       `}
       className={`${className ?? ""} time-card`}
-      whileTap={{ scale: disabled || !hasOnClick ? 1 : 0.9 }}
+      disableScale={disabled || !hasOnClick}
       disableActiveState={rest.disableActiveState ?? !hasOnClick}
       disableRipples={rest.disableRipples ?? !hasOnClick}
       onClick={(_: unknown, event: React.MouseEvent<HTMLElement, MouseEvent>) => {
@@ -214,9 +225,7 @@ function _TimeCard({
         <Column className="column" gap="0.5rem" alignItems={center ? "center" : "flex-start"} fullHeight wrap="nowrap">
           {(!hideIcon || !hideTime) && (
             <Row className="row" gap="0.5rem" alignItems="center" wrap="nowrap">
-              {!hideIcon && (
-                <Icon className="icon primary-icon" icon={icon || dateSensor?.attributes?.icon || "mdi:calendar"} {...(iconProps ?? {})} />
-              )}
+              {!hideIcon && <Icon className="icon primary-icon" icon={dateIcon} {...(iconProps ?? {})} />}
               {!hideTime && timeValue}
             </Row>
           )}
@@ -244,7 +253,7 @@ export function TimeCard(props: TimeCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "TimeCard" })}>
-      <_TimeCard {...defaultColumns} {...props} />
+      <InternalTimeCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

@@ -15,11 +15,11 @@ import { MediaPlayerCard, CardBase, Row, Column, Group, VolumeControls, fallback
 import { Fab } from "../../../../Cards/MediaPlayerCard/Fab";
 import { capitalize, flatten, groupBy } from "lodash";
 import { useCallback, useMemo, useState, useEffect } from "react";
-import { spring } from "framer-motion";
 
 const StyledMediaPlayerCard = styled(CardBase)`
   transform: none;
   will-change: width, height;
+  overflow: visible;
   svg {
     color: currentColor;
   }
@@ -97,8 +97,13 @@ export const MediaPlayerControls = ({
 
       // no speakers are playing -> play media
       if (playingSpeakers.length === 0) {
-        mediaPlayerService.playMedia(entity.attributes?.group_members ?? entity.entity_id, { ...lastPlayedMedia, enqueue: "play" });
-        return mediaPlayerService.mediaPlay(entity.attributes?.group_members ?? entity.entity_id);
+        mediaPlayerService.playMedia({
+          target: entity.attributes?.group_members ?? entity.entity_id,
+          serviceData: { ...lastPlayedMedia, enqueue: "play" },
+        });
+        return mediaPlayerService.mediaPlay({
+          target: entity.attributes?.group_members ?? entity.entity_id,
+        });
       }
 
       // the target speaker is playing and only has one member in the group -> pause media
@@ -107,17 +112,24 @@ export const MediaPlayerControls = ({
           media_content_id: entity.attributes.media_content_id ?? "",
           media_content_type: entity.attributes.media_content_type ?? "",
         });
-        return mediaPlayerService.mediaPause(entity.attributes?.group_members ?? entity.entity_id);
+        return mediaPlayerService.mediaPause({
+          target: entity.attributes?.group_members ?? entity.entity_id,
+        });
       }
 
       // the target speaker is playing and has more than one member in the group -> unjoin
       if ((entity.attributes?.group_members?.length || 0) > 1 && entity.state === "playing") {
-        return mediaPlayerService.unjoin(entityId);
+        return mediaPlayerService.unjoin({
+          target: entityId,
+        });
       }
 
       // the target speaker is not playing, and we have at least one speaker playing -> join
       if (entity.state !== "playing" && playingSpeakers.length > 0) {
-        return mediaPlayerService.join({ entity_id: playingSpeakers[0].entity_id }, { group_members: [entityId] });
+        return mediaPlayerService.join({
+          target: playingSpeakers[0].entity_id,
+          serviceData: { group_members: [entityId] },
+        });
       }
     },
     [groupedEntities, mediaPlayerService, lastPlayedMedia],
@@ -184,13 +196,16 @@ export const MediaPlayerControls = ({
               return (
                 <StyledMediaPlayerCard
                   key={entity.entity_id}
-                  layout
-                  transition={spring}
                   disableRipples
                   disableScale
                   disableActiveState
+                  xxs={12}
+                  xs={12}
+                  sm={12}
+                  md={12}
+                  lg={12}
+                  xlg={12}
                   className={`entities-card entities-card-media-controls`}
-                  style={{ overflow: "visible" }}
                 >
                   <ErrorBoundary {...fallback({ prefix: "EntityRow" })}>
                     <StyledColumn gap={"0.5rem"} justifyContent={"space-between"}>
@@ -214,9 +229,13 @@ export const MediaPlayerControls = ({
                             }}
                             onClick={() => {
                               if (isOff) {
-                                mediaPlayerService.turnOn(entity.entity_id);
+                                mediaPlayerService.turnOn({
+                                  target: entity.entity_id,
+                                });
                               } else {
-                                mediaPlayerService.turnOff(entity.entity_id);
+                                mediaPlayerService.turnOff({
+                                  target: entity.entity_id,
+                                });
                               }
                             }}
                           />
@@ -224,7 +243,7 @@ export const MediaPlayerControls = ({
                         {!isOff && (
                           <VolumeControls
                             entity={entity.entity_id as FilterByDomain<EntityName, "media_player">}
-                            volumeLayout={"slider"}
+                            volumeLayout={"buttons"}
                             hideMute={false}
                             disabled={false}
                             layout={"slim"}

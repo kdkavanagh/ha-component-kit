@@ -1,5 +1,6 @@
-import { Story, Source } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+
 import { HassConnect } from '@hass-connect-fake';
 import {
   ThemeProvider,
@@ -7,10 +8,12 @@ import {
   Column,
   ButtonCard,
   Group,
-  useBreakpoint,
+  ThemeControlsModal,
+  useBreakpoint as useBreakpointHook,
 } from '@components';
 import { css, Global } from "@emotion/react";
 import jsxToString from "react-element-to-jsx-string";
+
 
 function ResponsiveGroupsExample() {
   return <Row fullWidth  justifyContent="flex-start" alignItems="stretch" gap="1rem">
@@ -56,7 +59,7 @@ function ButtonsDifferentSizes() {
 
 
 function Template() {
-  const device = useBreakpoint();
+  const device = useBreakpointHook();
   return <Row fullWidth wrap="nowrap" fullHeight alignItems="stretch">
     <Column fullWidth gap="1rem" wrap="nowrap" alignItems="flex-start" justifyContent="flex-start" style={{
       padding: device.xxs || device.xs ? '1rem' : '2rem',
@@ -64,7 +67,7 @@ function Template() {
     }}>
       <h2>Responsive Layouts</h2>
       <p>You can specify individual card sizes by providing the breakpoint props to any card!</p>
-      <p>Every card has default properties assigned and should flow nicely by default, however they're designed in a way expecting the parent container to be full width of the screen, so if you want a panel that should have half of the screen width for desktop, and full sized for mobile, here's how you can achieve that!</p>
+      <p>Every card has default properties assigned and should flow nicely by default, however they&apos;re designed in a way expecting the parent container to be full width of the screen, so if you want a panel that should have half of the screen width for desktop, and full sized for mobile, here&apos;s how you can achieve that!</p>
       <p>NOTE: If you want to know what breakpoints are currently active, you can inspect the body of the document, and you should see a `bp-md, or bp-sm` etc class added to the element.</p>
       <p>The default breakpoint values are also configurable from the `ThemeProvider` under the property `breakpoints`.</p>
       <ResponsiveGroupsExample />
@@ -90,7 +93,8 @@ function Template() {
 
 function Connector() {
   return <HassConnect hassUrl="https://homeassistant.local:8123">
-    <ThemeProvider includeThemeControls darkMode={true} />
+    <ThemeProvider darkMode={true} />
+    <ThemeControlsModal />
     <Global styles={css`
       .docblock-source.sb-unstyled {
         width: 100%;
@@ -103,12 +107,11 @@ function Connector() {
 
 export default {
   title: "INTRODUCTION/Responsive Layouts",
+  tags: ['!autodocs'],
   parameters: {
     standalone: true,
-    addons: {
-      showPanel: false,
-    },
     docs: {
+      page: null,
       description: {
         component: `@hakit provides a series of tools to easily authenticate and communicate with your home assistant instance from React!`
       }
@@ -118,4 +121,27 @@ export default {
 
 export type Story = StoryObj<typeof Connector>;
 
-export const Default = Connector.bind({});
+export const Demo = Connector.bind({});
+
+const Empty = () => <></>;
+
+export type UseBreakpoint = StoryObj<typeof Empty>;
+export const UseBreakpoint: Story = {
+  render: Empty,
+  parameters: {
+    redirectTo: '/docs/components-hooks-usebreakpoint--docs',
+  }
+};
+
+UseBreakpoint.storyName = 'useBreakpoint';
+
+
+export type CustomBreakpoints = StoryObj<typeof Empty>;
+export const CustomBreakpoints: Story = {
+  render: Empty,
+  parameters: {
+    redirectTo: '/story/components-hooks-usebreakpoint--custom-breakpoints',
+  }
+};
+
+CustomBreakpoints.storyName = 'Custom Breakpoints';

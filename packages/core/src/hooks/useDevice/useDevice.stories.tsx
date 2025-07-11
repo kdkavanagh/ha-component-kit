@@ -1,8 +1,8 @@
-import { Story, Source, Title, Description } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 export default {
-  title: "HOOKS/useDevice",
+  title: "core/hooks/useDevice",
   tags: ["autodocs"],
   parameters: {
     centered: true,
@@ -18,8 +18,8 @@ export default {
           <p>The following is the use of the hook:</p>
           <Source dark code={`const device = useDevice('camera.some_camera');`} />
           <p>
-            The above will either return null or the extended device information, this is not the entity, but rather the device, they're
-            different in the eyes of home assistant, and not all entities have devices.
+            The above will either return null or the extended device information, this is not the entity, but rather the device,
+            they&apos;re different in the eyes of home assistant, and not all entities have devices.
           </p>
           <p>The return type is provided with typescript so you can see the difference.</p>
         </>

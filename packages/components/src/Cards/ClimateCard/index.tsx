@@ -6,9 +6,9 @@ import { useEntity, OFF, isUnavailableState, useHass, localize } from "@hakit/co
 import { fallback, Row, ButtonBar, Column } from "@components";
 import { capitalize } from "lodash";
 import { icons, activeColors, colors } from "../../Shared/Entity/Climate/ClimateControls/shared";
+import { UNIT_F } from "../../Shared/Entity/Climate/ClimateControls/data";
 import { ErrorBoundary } from "react-error-boundary";
 import type { HassConfig } from "home-assistant-js-websocket";
-import { LocaleKeys } from "@hooks";
 import { FeatureEntity, type FeatureEntityProps } from "../CardBase/FeatureEntity";
 
 import { ButtonCard, type ButtonCardProps } from "../ButtonCard";
@@ -61,7 +61,7 @@ const Temperature = styled.span`
   }
 `;
 
-type OmitProperties = "onClick" | "children" | "active" | "as" | "ref" | "disableActiveState" | "features";
+type OmitProperties = "onClick" | "children" | "active" | "as" | "disableActiveState" | "features";
 
 type Extendable = Omit<ClimateControlsProps, "onClick"> & Omit<ButtonCardProps<ClimateControlsProps["entity"]>, OmitProperties>;
 export interface ClimateCardProps extends Extendable {
@@ -73,7 +73,7 @@ export interface ClimateCardProps extends Extendable {
   showTemperatureControls?: boolean;
 }
 
-function _ClimateCard({
+function InternalClimateCard({
   entity: _entity,
   onClick,
   hvacModes,
@@ -92,6 +92,7 @@ function _ClimateCard({
   layoutType,
   key,
   title,
+  targetTempStep,
   ...rest
 }: ClimateCardProps): React.ReactNode {
   const { getConfig, useStore } = useHass();
@@ -109,6 +110,7 @@ function _ClimateCard({
     max_temp = 40,
     unit_of_measurement,
     temperature = 20,
+    target_temp_step,
   } = entity.attributes || {};
   const isOff = entity.state === OFF;
   const titleValue = useMemo(() => {
@@ -121,11 +123,15 @@ function _ClimateCard({
     return hvac_action ? localize(hvac_action) : localize("unknown");
   }, [hvac_action, isUnavailable, isOff]);
 
+  const _step = useMemo(() => {
+    return targetTempStep ?? target_temp_step ?? (config?.unit_system.temperature === UNIT_F ? 1 : 0.5);
+  }, [config?.unit_system.temperature, targetTempStep, target_temp_step]);
+
   useEffect(() => {
     getConfig().then(setConfig);
   }, [getConfig]);
 
-  const havacModesToUse = (hvacModes ?? []).length === 0 ? hvac_modes : hvacModes ?? [];
+  const havacModesToUse = (hvacModes ?? []).length === 0 ? hvac_modes : (hvacModes ?? []);
 
   return (
     <>
@@ -147,6 +153,7 @@ function _ClimateCard({
           hideCurrentTemperature,
           hideHvacModes,
           hvacModeLabels,
+          targetTempStep: _step,
           ...modalProps,
         }}
         onClick={() => {
@@ -176,7 +183,9 @@ function _ClimateCard({
               icon: icons[mode],
               onClick: () => {
                 entity.service.setHvacMode({
-                  hvac_mode: mode,
+                  serviceData: {
+                    hvac_mode: mode,
+                  },
                 });
               },
             } satisfies FeatureEntityProps;
@@ -206,7 +215,7 @@ function _ClimateCard({
             <Description className="climate-description">
               <span>{titleValue}</span>
               <span className="fan-speed">
-                {localize("speed")}: {localize(entity.attributes.fan_mode as LocaleKeys) || localize("unknown")}
+                {localize("speed")}: {localize(entity.attributes.fan_mode as "low") || localize("unknown")}
               </span>
               {!hideCurrentTemperature && (
                 <span className="current-temperature">
@@ -243,7 +252,9 @@ function _ClimateCard({
                 icon={"mdi:minus"}
                 onClick={() => {
                   entity.service.setTemperature({
-                    temperature: temperature - 1,
+                    serviceData: {
+                      temperature: temperature - _step,
+                    },
                   });
                 }}
               />
@@ -282,7 +293,9 @@ function _ClimateCard({
                 icon={"mdi:plus"}
                 onClick={() => {
                   entity.service.setTemperature({
-                    temperature: temperature + 1,
+                    serviceData: {
+                      temperature: temperature + _step,
+                    },
                   });
                 }}
               />
@@ -307,7 +320,7 @@ export function ClimateCard(props: ClimateCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "ClimateCard" })}>
-      <_ClimateCard {...defaultColumns} {...props} />
+      <InternalClimateCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

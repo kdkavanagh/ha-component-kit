@@ -1,12 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, ButtonBar, ButtonBarButton, Row, Alert } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, ButtonBar, ButtonBarButton, ThemeControlsModal, Row, Alert } from "@components";
 import type { ButtonBarProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Template(args?: Partial<ButtonBarProps>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row
         gap="1rem"
         style={{
@@ -28,7 +29,7 @@ function Template(args?: Partial<ButtonBarProps>) {
       <Alert type="info" style={{ marginTop: `1rem` }}>
         <p>
           The background color above is not part of the component, was only set as these buttons have a similar colour to the main
-          background color as they're typically used within other cards which have a lighter background.
+          background color as they&apos;re typically used within other cards which have a lighter background.
         </p>
       </Alert>
     </HassConnect>
@@ -36,15 +37,16 @@ function Template(args?: Partial<ButtonBarProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Shared/Entity/Miscellaneous/ButtonBar",
+  title: "components/Shared/Entity/Miscellaneous/ButtonBar",
   component: ButtonBar,
+  subcomponents: { ButtonBarButton },
   tags: ["autodocs"],
   parameters: {
     fullWidth: true,
   },
 } satisfies Meta<typeof ButtonBar>;
 export type TimeStory = StoryObj<typeof ButtonBar>;
-export const Example: TimeStory = {
+export const Docs: TimeStory = {
   render: Template,
   args: {},
 };

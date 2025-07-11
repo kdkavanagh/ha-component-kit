@@ -1,5 +1,5 @@
-import { Story } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { HassConnect } from '@hass-connect-fake';
 import {
   ThemeProvider,
@@ -29,6 +29,7 @@ import {
   ButtonGroupButton,
   VacuumCard,
   AlarmCard,
+  ThemeControlsModal,
 } from '@components';
 import office from './office.jpg';
 import livingRoom from './living-room.jpg';
@@ -70,7 +71,7 @@ function Template() {
           lg={6}
           xlg={6}
           title="ButtonCard"
-          description={<span>With layoutType="slim" we can change the layout of the ButtonCard</span>}
+          description={<span>With layoutType=&quot;slim&quot; we can change the layout of the ButtonCard</span>}
           justifyContent="flex-start"
           alignItems="stretch">
           <ButtonCard id="slim" layoutType="slim" entity="light.fake_light_1" service="toggle" md={6} lg={4} xlg={4} />
@@ -80,7 +81,7 @@ function Template() {
           <ButtonCard id="slim" layoutType="slim" entity="cover.cover_with_tilt" service="toggle" md={6} lg={4} xlg={4} />
         </Group>
       </Row>
-      <Group title="ButtonCard"  description={<span>With layoutType="slim-vertical" we can change the layout of the ButtonCard</span>} justifyContent="flex-start" alignItems="stretch">
+      <Group title="ButtonCard"  description={<span>With layoutType=&quot;slim-vertical&quot; we can change the layout of the ButtonCard</span>} justifyContent="flex-start" alignItems="stretch">
         <ButtonCard id="slim-vertical" layoutType="slim-vertical" entity="light.fake_light_1" service="toggle" />
         <ButtonCard id="slim-vertical" layoutType="slim-vertical" entity="light.fake_light_2" service="toggle" icon="mdi:power" />
         <ButtonCard id="slim-vertical" layoutType="slim-vertical" entity="light.fake_light_3" service="toggle" />
@@ -178,8 +179,8 @@ function Template() {
             entity="camera.demo_camera"
             name="Only poster available in demo"
             headerSensors={[
-            <ButtonBarButton entity="binary_sensor.vehicle" />,
-            <ButtonBarButton entity="switch.record" />
+            <ButtonBarButton key="a" entity="binary_sensor.vehicle" />,
+            <ButtonBarButton key="b" entity="switch.record" />
           ]}
           />
           <SensorCard entity="sensor.air_conditioner_inside_temperature" />     
@@ -261,7 +262,7 @@ function Template() {
 
 function Connector() {
   return <HassConnect hassUrl="https://homeassistant.local:8123">
-    <ThemeProvider includeThemeControls darkMode={true} theme={{
+    <ThemeProvider darkMode={true} theme={{
       device: {
         sidebarCard: {
           width: {
@@ -270,25 +271,23 @@ function Connector() {
         }
       }
     }} />
+    <ThemeControlsModal />
     <Template />
   </HassConnect>
 }
 
 export default {
   title: "INTRODUCTION/Demo",
+  tags: ['!autodocs'],
   parameters: {
     standalone: true,
-    addons: {
-      showPanel: false,
-    },
+    hideComponentProps: true,
     docs: {
-      description: {
-        component: `@hakit provides a series of tools to easily authenticate and communicate with your home assistant instance from React!`
-      }
-    }
+      page: null
+    },
   },
 } satisfies Meta;
 
 export type Story = StoryObj<typeof Connector>;
 
-export const Default = Connector.bind({});
+export const Demo = Connector.bind({});

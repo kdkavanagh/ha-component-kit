@@ -17,7 +17,6 @@ import {
 } from "@components";
 import { ErrorBoundary } from "react-error-boundary";
 import { getAdditionalWeatherInformation } from "./helpers";
-import { motion } from "framer-motion";
 
 const Card = styled(CardBase)``;
 
@@ -90,7 +89,7 @@ function splitForecastsIntoRows<T>(arr: T[], rowCount: number, maxItemsPerRow: n
   return result;
 }
 
-const Forecast = styled(motion.div)`
+const Forecast = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -119,7 +118,7 @@ const TemperatureLow = styled.div`
   font-size: 0.75rem;
 `;
 
-type OmitProperties = "as" | "ref" | "entity";
+type OmitProperties = "as" | "entity";
 export interface WeatherCardProps extends Omit<CardBaseProps<"div", FilterByDomain<EntityName, "weather">>, OmitProperties> {
   /** The name of your entity */
   entity: FilterByDomain<EntityName, "weather">;
@@ -151,9 +150,9 @@ export interface WeatherCardProps extends Omit<CardBaseProps<"div", FilterByDoma
   allowForecastToggle?: boolean;
 }
 
-const FORECAST_ITEM_PROJECTED_WIDTH = 40;
+const FORECAST_ITEM_PROJECTED_WIDTH = 50;
 
-function _WeatherCard({
+function InternalWeatherCard({
   entity,
   title,
   icon: _icon,
@@ -239,7 +238,7 @@ function _WeatherCard({
             const dateFormatted = convertDateTime(forecast.datetime, timeZone);
             const [day, , hour] = dateFormatted.split(",");
             return (
-              <Forecast key={index} className="forecast" layoutId={forecast.datetime}>
+              <Forecast key={index} className="forecast">
                 {includeDay && <Day className="day">{day}</Day>}
                 {includeTime && <Time className="time">{hour}</Time>}
                 <ForecastIcon
@@ -281,9 +280,12 @@ function _WeatherCard({
       serviceData={serviceData}
       className={`${className ?? ""} weather-card`}
       resizeDetectorProps={{
-        refreshRate: 500,
+        refreshRate: 50,
+        refreshMode: "throttle",
         onResize({ width: _width }) {
-          setWidth(_width ?? 0);
+          if (_width) {
+            setWidth(_width);
+          }
         },
       }}
       cssStyles={`
@@ -348,7 +350,7 @@ function _WeatherCard({
             })}
           </Row>
         )}
-        {includeForecast && !isUnavailable && genForecastRows()}
+        {includeForecast && !isUnavailable && width > 0 && genForecastRows()}
         {isUnavailable && weather.state}
       </Contents>
     </Card>
@@ -369,7 +371,7 @@ export function WeatherCard(props: WeatherCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "WeatherCard" })}>
-      <_WeatherCard {...defaultColumns} {...props} />
+      <InternalWeatherCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

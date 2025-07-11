@@ -6,7 +6,7 @@ import { useSubscribeEntity } from "../useSubscribeEntity";
 import { useService } from "../useService";
 import { useHistory } from "../useHistory";
 import { getIconByEntity } from "../useIcon";
-import { useDebouncedCallback } from "use-debounce";
+import { useThrottledCallback } from "use-debounce";
 import { getCssColorValue } from "@utils/colors";
 import { computeDomain } from "@utils/computeDomain";
 import { diff } from "deep-object-diff";
@@ -21,8 +21,8 @@ interface UseEntityOptions {
   historyOptions?: HistoryOptions;
 }
 
-const DEFAULT_OPTIONS: UseEntityOptions = {
-  throttle: 150,
+const DEFAULT_OPTIONS: Required<UseEntityOptions> = {
+  throttle: 25,
   returnNullIfNotFound: false,
   historyOptions: {
     hoursToShow: 24,
@@ -81,9 +81,17 @@ export function useEntity<E extends EntityName, O extends UseEntityOptions = Use
     },
     [language],
   );
-  const debounceUpdate = useDebouncedCallback((entity: HassEntity) => {
-    setEntity(formatEntity(entity));
-  }, throttle);
+  const debounceUpdate = useThrottledCallback(
+    (entity: HassEntity) => {
+      setEntity(formatEntity(entity));
+    },
+    throttle,
+    {
+      leading: true,
+      trailing: true,
+    },
+  );
+
   const [$entity, setEntity] = useState<HassEntityCustom | null>(matchedEntity !== null ? formatEntity(matchedEntity) : null);
 
   useEffect(() => {
@@ -123,6 +131,23 @@ export function useEntity<E extends EntityName, O extends UseEntityOptions = Use
       }
     }
   }, [$entity, debounceUpdate, getEntity]);
+
+  useEffect(() => {
+    // when the initial ID doesn't match an entity, but it's updated dynamically through the hook
+    // we need to update the entity state
+    if (matchedEntity && !$entity) {
+      setEntity(formatEntity(matchedEntity));
+    }
+    // when the initial ID matches an entity, but it's updated dynamically through the hook and no longer matches
+    // we need to clear the entity state
+    if (!matchedEntity && $entity) {
+      setEntity(null);
+    }
+    // when the initial ID matches an entity, but it doesn't match the entity id already set, we need to update the entity
+    if (matchedEntity && $entity && matchedEntity.entity_id !== $entity.entity_id) {
+      setEntity(formatEntity(matchedEntity));
+    }
+  }, [matchedEntity, $entity, formatEntity]);
 
   return useMemo(() => {
     if ($entity === null) {

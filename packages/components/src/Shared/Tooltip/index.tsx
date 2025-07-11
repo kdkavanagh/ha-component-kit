@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback } from "react";
+import { useRef, useCallback, Children, isValidElement, cloneElement, useState } from "react";
 import { createPortal } from "react-dom";
 import styled from "@emotion/styled";
 import { fallback } from "@components";
@@ -81,7 +81,7 @@ const TooltipSpan = styled.span<Pick<TooltipProps, "placement">>`
   }
 `;
 
-export interface TooltipProps extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
+export interface TooltipProps extends Omit<React.ComponentPropsWithRef<"div">, "title"> {
   /** the placement of the tooltip @default 'top' */
   placement?: "top" | "right" | "bottom" | "left";
   /** the title of the tooltip */
@@ -90,62 +90,63 @@ export interface TooltipProps extends Omit<React.ComponentPropsWithoutRef<"div">
   children: React.ReactNode;
 }
 
-function _Tooltip({ placement = "top", title = null, children, ...rest }: TooltipProps) {
+function InternalTooltip({ placement = "top", title = null, children, ref, ...rest }: TooltipProps) {
   const tooltipRef = useRef<HTMLSpanElement | null>(null);
   const childRef = useRef<HTMLDivElement | null>(null);
   const { useStore } = useHass();
   const portalRoot = useStore((store) => store.portalRoot);
+  const windowContext = useStore((store) => store.windowContext);
+  const win = windowContext ?? window;
+  const [show, setShow] = useState(false);
 
-  const calculatePosition = useCallback(() => {
-    const childRect = childRef.current?.getBoundingClientRect();
-    if (typeof childRect === "undefined" || !tooltipRef.current) return;
-    let top = 0;
-    let left = 0;
-    switch (placement) {
-      case "top":
-        top = childRect.top;
-        left = childRect.left + childRect.width / 2;
-        break;
-      case "right":
-        top = childRect.top + childRect.height / 2;
-        left = childRect.right;
-        break;
-      case "bottom":
-        top = childRect.bottom;
-        left = childRect.left + childRect.width / 2;
-        break;
-      case "left":
-        top = childRect.top + childRect.height / 2;
-        left = childRect.left;
-        break;
-    }
-    tooltipRef.current.style.top = `${top}px`;
-    tooltipRef.current.style.left = `${left}px`;
-  }, [placement]);
-
-  useEffect(() => {
-    calculatePosition();
-    window.addEventListener("resize", calculatePosition);
-    return () => {
-      window.removeEventListener("resize", calculatePosition);
-    };
-  }, [calculatePosition]);
+  const calculatePosition = useCallback(
+    (el: HTMLSpanElement) => {
+      const childRect = childRef.current?.getBoundingClientRect();
+      if (typeof childRect === "undefined") return;
+      let top = 0;
+      let left = 0;
+      switch (placement) {
+        case "top":
+          top = childRect.top;
+          left = childRect.left + childRect.width / 2;
+          break;
+        case "right":
+          top = childRect.top + childRect.height / 2;
+          left = childRect.right;
+          break;
+        case "bottom":
+          top = childRect.bottom;
+          left = childRect.left + childRect.width / 2;
+          break;
+        case "left":
+          top = childRect.top + childRect.height / 2;
+          left = childRect.left;
+          break;
+      }
+      el.style.top = `${top}px`;
+      el.style.left = `${left}px`;
+      // to ensure animations play out, we need to update these values after the next tick
+      setTimeout(() => {
+        el.style.opacity = "1";
+        el.style.visibility = "visible";
+      }, 0);
+    },
+    [placement],
+  );
 
   const handleMouseEnter = useCallback(() => {
-    const tooltipEl = tooltipRef.current;
-    if (tooltipEl) {
-      tooltipEl.style.opacity = "1";
-      tooltipEl.style.visibility = "visible";
-      calculatePosition();
-    }
-  }, [calculatePosition]);
+    setShow(true);
+  }, []);
 
   const handleHide = useCallback(() => {
     const tooltipEl = tooltipRef.current;
-    if (tooltipEl) {
-      tooltipEl.style.opacity = "0";
-      tooltipEl.style.visibility = "hidden";
-    }
+    if (!tooltipEl) return;
+    tooltipEl.style.opacity = "0";
+    tooltipEl.style.visibility = "hidden";
+    tooltipEl.setAttribute("aria-hidden", "true");
+    setTimeout(() => {
+      setShow(false);
+    }, 250);
   }, []);
 
   if (title === null || title === "") {
@@ -163,13 +164,44 @@ function _Tooltip({ placement = "top", title = null, children, ...rest }: Toolti
       onMouseLeave={handleHide}
       {...rest}
     >
-      {children}
+      {Children.map(children, (child, index) => {
+        if (
+          isValidElement<
+            Omit<React.ComponentPropsWithRef<"div">, "onClick"> & {
+              onClick: (unknown: null, event: React.MouseEvent<HTMLDivElement>) => void;
+            }
+          >(child)
+        ) {
+          return cloneElement(child, {
+            ...child.props,
+            onClick(_unknown: null, event: React.MouseEvent<HTMLDivElement>) {
+              child.props.onClick?.(_unknown, event);
+              rest?.onClick?.(event);
+            },
+            ref,
+            key: child.key ?? index,
+          });
+        }
+        return child;
+      })}
       {typeof document !== "undefined" &&
         createPortal(
-          <TooltipSpan className="tooltip-inner" placement={placement} ref={tooltipRef}>
-            {title}
-          </TooltipSpan>,
-          portalRoot ?? document.body,
+          show && (
+            <TooltipSpan
+              className="tooltip-inner"
+              placement={placement}
+              ref={(ref) => {
+                if (ref) {
+                  tooltipRef.current = ref;
+                  calculatePosition(ref);
+                }
+              }}
+              aria-hidden="false"
+            >
+              {title}
+            </TooltipSpan>
+          ),
+          portalRoot ?? win.document.body,
         )}
     </div>
   );
@@ -179,7 +211,7 @@ function _Tooltip({ placement = "top", title = null, children, ...rest }: Toolti
 export function Tooltip(props: TooltipProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "Tooltip" })}>
-      <_Tooltip {...props} />
+      <InternalTooltip {...props} />
     </ErrorBoundary>
   );
 }

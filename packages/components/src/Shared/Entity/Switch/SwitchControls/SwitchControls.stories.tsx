@@ -1,12 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, SwitchControls, Row } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, SwitchControls, Row, ThemeControlsModal } from "@components";
 import type { SwitchControlsProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Template(args?: Partial<SwitchControlsProps>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row gap={"1rem"} fullWidth justifyContent="flex-start">
         <SwitchControls {...args} entity="switch.fake_switch" />
         <SwitchControls {...args} entity="switch.unavailable" />
@@ -16,7 +17,7 @@ function Template(args?: Partial<SwitchControlsProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Shared/Entity/Switch/SwitchControls",
+  title: "components/Shared/Entity/Switch/SwitchControls",
   component: SwitchControls,
   tags: ["autodocs"],
   parameters: {
@@ -24,7 +25,7 @@ export default {
   },
 } satisfies Meta<typeof SwitchControls>;
 export type TimeStory = StoryObj<typeof SwitchControls>;
-export const SwitchControlsExample: TimeStory = {
+export const Docs: TimeStory = {
   render: Template,
   args: {},
 };

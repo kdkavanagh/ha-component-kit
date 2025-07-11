@@ -1,11 +1,13 @@
-import type { Preview } from "@storybook/react";
-import { Title, Description, Primary, ArgTypes } from "@storybook/blocks";
+import type { Preview } from "@storybook/react-vite";
 import React from "react";
 import { withThemeFromJSXProvider } from '@storybook/addon-themes';
-import { ThemeProvider } from '@storybook/theming';
+import { ThemeProvider } from 'storybook/theming';
+import { Page } from "./page";
+import { redirectToStory } from './redirect';
 import './global.css';
 
-const THEME = {
+
+const theme = {
   typography: {
     fonts: {
       base: 'Arial, sans-serif',
@@ -14,55 +16,33 @@ const THEME = {
   }
 };
 
+
+
 export default {
+  tags: ['autodocs'],
   decorators: [
     withThemeFromJSXProvider({
       themes: {
-        dark: THEME,
-        light: THEME,
+        dark: theme,
+        light: theme,
       },
       defaultTheme: 'dark',
       Provider: ThemeProvider,
     }),
     (Story, args) => {
+      // sometimes, you might want to have one story listed in two places, storybook doesn't handle this
+      // so we redirect from one story to another
+      if (args.parameters.redirectTo) {
+        if (window.top) {
+          redirectToStory(args.parameters.redirectTo);
+        }
+      }
       const centered = args.parameters.centered ? {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
         padding: '1rem',
       } : {};
-      if (window.parent) {
-        const parentDocument = window.parent.document;
-        const logo = parentDocument.querySelector('.sidebar-header div img') as HTMLElement;
-        if (logo) {
-          logo.style.maxWidth = '100%';
-        }
-        const panel = parentDocument.getElementById('storybook-panel-root');
-        const shouldHidePanel = args.parameters?.addons?.showPanel === false;
-        if (shouldHidePanel && panel !== null && panel.parentElement !== null) {
-          panel.parentElement.style.display = 'none';
-        } else if (panel !== null && panel.parentElement !== null) {
-          panel.parentElement.style.display = 'flex';
-        }
-        const previewer = parentDocument.querySelector('#root div div:has(main)') as HTMLElement;
-        if (previewer !== null && shouldHidePanel) {
-          const rootDiv = parentDocument.querySelector('#root > div') as HTMLElement;
-          if (rootDiv !== null) {
-            rootDiv.style.display = 'flex';  
-            rootDiv.style.flexDirection = 'row-reverse';
-            rootDiv.style.flexWrap = 'nowrap';
-            const sidebarContainer = parentDocument.querySelector('#root > div > div:has(.sidebar-container)') as HTMLElement;
-            if (sidebarContainer) {
-              sidebarContainer.style.width = '300px';
-            }
-          }
-          previewer.style.height = '100dvh';
-          previewer.style.width = '100%';
-        } else {
-          // remove the width/height inline styles
-          previewer?.removeAttribute('style');
-        }
-      }
       if (args.parameters.standalone) {
         return <Story />;
       }
@@ -75,11 +55,12 @@ export default {
         }}><div style={{
           width: args.parameters.fillWidth || args.parameters.fullWidth ? '100%' : undefined,
           height: args.parameters.fillHeight ? '100%' : undefined,
-        }}><Story /></div></div>
+        }}>
+          <Story />
+        </div></div>
       </div>
     },
   ],
-
   parameters: {
     layout: 'centered',
     controls: {
@@ -87,7 +68,11 @@ export default {
         color: /(background|color)$/i,
         date: /Date$/,
       },
-    },    
+    },
+    addons: {
+      showPanel: false,
+      showTabs: false,
+    },
     options: {
       storySort: (a, b) => {
         const splitAndTakeFirst = (str, delimiter) => str.split(delimiter)[0];
@@ -119,14 +104,16 @@ export default {
       },
     },
     docs: {
-      page: () => (<>
-        <Title />
-        <Description />
-        <Primary />
-        <h2>Component Props</h2>
-        <ArgTypes />
-      </>),
+      canvas: {
+        sourceState: 'shown',
+      },
+      source: {
+        dark: true,
+        language: 'tsx',
+        excludeDecorators: false,
+        format: 'dedent',
+      },
+      page: Page
     }
   },
 } satisfies Preview;
-

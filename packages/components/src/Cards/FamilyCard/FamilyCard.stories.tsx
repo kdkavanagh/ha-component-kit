@@ -1,11 +1,12 @@
-import { Column, FamilyCard, PersonCard, ThemeProvider } from "@components";
+import { Column, FamilyCard, PersonCard, ThemeProvider, ThemeControlsModal } from "@components";
 import { HassConnect } from "@hass-connect-fake";
-import type { Args, Meta, StoryObj } from "@storybook/react";
+import type { Args, Meta, StoryObj } from "@storybook/react-vite";
 
 function Render(args?: Args) {
   return (
     <HassConnect hassUrl="https://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column gap="1rem" fullWidth>
         <FamilyCard title="State of a single person" {...args}>
           <PersonCard entity="person.john_doe" />
@@ -30,7 +31,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/FamilyCard",
+  title: "components/Cards/FamilyCard",
   component: FamilyCard,
   tags: ["autodocs"],
   parameters: {
@@ -38,7 +39,7 @@ export default {
   },
 } satisfies Meta<typeof FamilyCard>;
 export type FamilyStory = StoryObj<typeof FamilyCard>;
-export const Example: FamilyStory = {
+export const Docs: FamilyStory = {
   render: Render,
   args: {},
 };

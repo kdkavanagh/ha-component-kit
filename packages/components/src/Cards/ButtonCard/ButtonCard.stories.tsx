@@ -1,15 +1,15 @@
-import { Source } from "@storybook/blocks";
-import type { Meta, StoryObj, Args } from "@storybook/react";
-import { ThemeProvider, Group, Column, ButtonCard } from "@components";
+import { Source } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
+import { ThemeProvider, Group, Column, ButtonCard, ThemeControlsModal } from "@components";
 import type { ButtonCardProps } from "@components";
-
 import { HassConnect } from "@hass-connect-fake";
 import jsxToString from "react-element-to-jsx-string";
 
 function Template(args?: Partial<ButtonCardProps<"switch.fake_switch">>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Group title="Examples" alignItems="stretch">
         <ButtonCard
           {...args}
@@ -29,16 +29,21 @@ function Template(args?: Partial<ButtonCardProps<"switch.fake_switch">>) {
 function TemplateOnclick(args?: Partial<ButtonCardProps<"climate.air_conditioner">>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <ButtonCard
         {...args}
         entity="climate.air_conditioner"
         onClick={(entity) => {
           entity.service.setHvacMode({
-            hvac_mode: entity.state === "off" ? "heat" : "off",
+            serviceData: {
+              hvac_mode: entity.state === "off" ? "heat" : "off",
+            },
           });
           entity.service.setTemperature({
-            temperature: 25,
+            serviceData: {
+              temperature: 25,
+            },
           });
         }}
       />
@@ -55,11 +60,11 @@ function ExampleDocs() {
       </p>
       <p>
         This will automatically extract the friendly name, icon, last updated, state, light color and group of the entity to render the
-        ButtonCard below, if there's no icon linked in home assistant it will use a predefined default by domain.
+        ButtonCard below, if there&apos;s no icon linked in home assistant it will use a predefined default by domain.
       </p>
       <h3>Custom onClick</h3>
       <p>
-        If you don't want to call a specific service or want to do multiple things with the entity, you can omit the service prop and
+        If you don&apos;t want to call a specific service or want to do multiple things with the entity, you can omit the service prop and
         perform your logic manually
       </p>
       <TemplateOnclick />
@@ -68,15 +73,20 @@ function ExampleDocs() {
         dark
         code={`
       <HassConnect hassUrl="http://localhost:8123">
-        <ThemeProvider includeThemeControls />
+        <ThemeProvider />
+        <ThemeControlsModal />
         <ButtonCard
           entity="climate.air_conditioner"
           onClick={entity => {
             entity.service.setHvacMode({
-              hvac_mode: entity.state === 'off' ? 'heat' : 'off',
+              serviceData: {
+                hvac_mode: entity.state === 'off' ? 'heat' : 'off',
+              }
             });
             entity.service.setTemperature({
-              temperature: 25,
+              serviceData: {
+                temperature: 25,
+              }
             });
           }}
         />
@@ -94,7 +104,8 @@ function ExampleDocs() {
 function Render(args?: Args) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column gap="1rem" fullWidth>
         <ButtonCard {...args} />
         <ButtonCard {...args} entity="light.fake_light_1" service="toggle" layoutType="slim" />
@@ -106,7 +117,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/ButtonCard",
+  title: "components/Cards/ButtonCard",
   component: ButtonCard,
   tags: ["autodocs"],
   parameters: {
@@ -118,7 +129,7 @@ export default {
 } satisfies Meta<typeof ButtonCard>;
 
 export type ExamplesStory = StoryObj<typeof ButtonCard<"switch.fake_switch">>;
-export const Examples: ExamplesStory = {
+export const Docs: ExamplesStory = {
   render: Render,
   args: {
     service: "toggle",

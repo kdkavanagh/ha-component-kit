@@ -1,7 +1,6 @@
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useCallback } from "react";
 import styled from "@emotion/styled";
-import { ControlSlider, Column, FabCard, ColorTempPicker, ColorPicker, useBreakpoint, fallback } from "@components";
-import { AnimatePresence } from "framer-motion";
+import { ControlSlider, Tooltip, Column, FabCard, ColorTempPicker, ColorPicker, useBreakpoint, fallback, Menu, ColumnProps } from "@components";
 import {
   useEntity,
   LIGHT_COLOR_MODES,
@@ -13,6 +12,7 @@ import {
   lightSupportsColorMode,
   lightSupportsColor,
   localize,
+  toReadableString,
 } from "@hakit/core";
 import type { EntityName, FilterByDomain } from "@hakit/core";
 import colorWheel from "./color_wheel.png";
@@ -109,12 +109,13 @@ const FabCardTemp = styled(FabCard)`
   }
 `;
 
-export interface LightControlsProps {
+type Extended = React.HTMLAttributes<HTMLDivElement> & ColumnProps;
+export interface LightControlsProps extends Extended {
   entity: FilterByDomain<EntityName, "light">;
   onStateChange?: (state: string) => void;
 }
 
-function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) {
+function InternalLightControls({ entity: _entity, onStateChange, style, ...rest }: LightControlsProps) {
   const [control, setControl] = useState<MainControl>("brightness");
   const entity = useEntity(_entity);
   const brightnessValue = useLightBrightness(entity);
@@ -136,9 +137,21 @@ function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) 
     }
   }, [titleValue, onStateChange]);
 
+  const _handleEffectChange = useCallback(
+    (value?: string) => {
+      entity.service.turnOn({
+        serviceData: {
+          effect: value,
+        },
+      });
+    },
+    [entity.service],
+  );
+
   const supportsColorTemp = lightSupportsColorMode(entity, LIGHT_COLOR_MODES.COLOR_TEMP);
   const supportsColor = lightSupportsColor(entity);
   const supportsBrightness = lightSupportsBrightness(entity);
+  const hasEffects = entity?.attributes?.effect_list && entity.attributes.effect_list.length > 0;
 
   return (
     <Column
@@ -148,7 +161,9 @@ function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) 
       justifyContent={device.xxs ? "flex-start" : "center"}
       style={{
         padding: device.xxs ? "1rem" : "0",
+        ...style,
       }}
+      {...rest}
     >
       <Column>
         {supportsColorTemp || supportsColor || supportsBrightness ? (
@@ -184,7 +199,9 @@ function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) 
                 }}
                 onChangeApplied={(value) => {
                   entity.service.turnOn({
-                    brightness_pct: value,
+                    serviceData: {
+                      brightness_pct: value,
+                    },
                   });
                   if (onStateChange) onStateChange(`${Math.round(value)}%`);
                 }}
@@ -195,20 +212,48 @@ function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) 
       </Column>
 
       <ButtonBar>
-        <FabCard
-          icon="mdi:power"
-          onClick={() => {
-            entity.service.toggle();
-          }}
-        />
-        {supportsColorTemp || supportsColor || (supportsBrightness && <Separator />)}
-        <AnimatePresence>
-          {supportsBrightness && <FabCard key={`${_entity}-brightness`} icon="mdi:brightness-6" onClick={() => setControl("brightness")} />}
-          {supportsColor && <FabCardColor key={`${_entity}-color`} active={control === "color"} onClick={() => setControl("color")} />}
-          {supportsColorTemp && (
+        <Tooltip title={entity.state === OFF ? localize("turn_on") : localize("turn_off")}>
+          <FabCard
+            icon="mdi:power"
+            onClick={() => {
+              entity.service.toggle();
+            }}
+          />
+        </Tooltip>
+        {supportsColorTemp || supportsColor || hasEffects || (supportsBrightness && <Separator />)}
+        {supportsBrightness && (
+          <Tooltip title={localize("color_brightness")}>
+            <FabCard key={`${_entity}-brightness`} icon="mdi:brightness-6" onClick={() => setControl("brightness")} />
+          </Tooltip>
+        )}
+        {supportsColor && (
+          <Tooltip title={localize("color")}>
+            <FabCardColor key={`${_entity}-color`} active={control === "color"} onClick={() => setControl("color")} />
+          </Tooltip>
+        )}
+        {supportsColorTemp && (
+          <Tooltip title={localize("color_temperature")}>
             <FabCardTemp key={`${_entity}-color-temp`} active={control === "color_temp"} onClick={() => setControl("color_temp")} />
-          )}
-        </AnimatePresence>
+          </Tooltip>
+        )}
+        {hasEffects && entity.attributes.effect_list && (
+          <Menu
+            placement="top"
+            items={entity.attributes.effect_list.map((effect) => {
+              return {
+                active: entity.attributes.effect === effect,
+                label: toReadableString(effect),
+                onClick: () => {
+                  _handleEffectChange(effect);
+                },
+              };
+            })}
+          >
+            <Tooltip title={localize("effect")}>
+              <FabCard key={`${_entity}-effects`} icon="mdi:stars" />
+            </Tooltip>
+          </Menu>
+        )}
       </ButtonBar>
     </Column>
   );
@@ -218,7 +263,7 @@ function _LightControls({ entity: _entity, onStateChange }: LightControlsProps) 
 export function LightControls(props: LightControlsProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "LightControls" })}>
-      <_LightControls {...props} />
+      <InternalLightControls {...props} />
     </ErrorBoundary>
   );
 }

@@ -1,11 +1,14 @@
-import { Source, Meta } from '@storybook/blocks';
+import { Source, Meta } from '@storybook/addon-docs/blocks';
+import getConfigExample from './examples/getConfig.code?raw';
 
 
-<Meta title="HOOKS/useHass/getConfig" />
+<Meta title="core/hooks/useHass/hass/getConfig" />
 
 # getConfig()
 This will return all information about your configuration of your home assistant instance, this is all typed with typescript
 so you'll have access to what's available on the object with the `HassConfig` type.
+
+> Note: This function will only return the current configuration, it will not subscribe to updates, use the `useConfig` hook to get live updates.
 
 ### Definition
 <Source dark language="ts" code={`await getConfig()`} />
@@ -13,16 +16,4 @@ so you'll have access to what's available on the object with the `HassConfig` ty
 
 ### Example Usage
 
-```ts
-function GetConfigExample() {
-  const { getConfig } = useHass();
-  const [state, setState] = useState<string>('UNKNOWN');
-  useEffect(() => {
-    async function fetchConfig() {
-      const config = await getConfig();
-      setState(config.state);
-    }
-    fetchConfig();
-  }, [])
-  return <p>Your home assistant instance is {state}</p>
-}
+<Source dark language="typescript" code={getConfigExample} />

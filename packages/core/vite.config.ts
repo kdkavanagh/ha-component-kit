@@ -6,7 +6,6 @@ import packageJson from './package.json';
 import { fileURLToPath } from 'node:url';
 import { extname, relative, resolve } from 'path'
 import { glob } from 'glob';
-
 import dts from 'vite-plugin-dts';
 
 const globals = {
@@ -15,7 +14,6 @@ const globals = {
   '@iconify/react': '@iconify/react',
   'use-debounce': 'use-debounce',
   'lodash': 'lodash',
-  'framer-motion': 'framer-motion',
   'react/jsx-runtime': 'react/jsx-runtime',
   'home-assistant-js-websocket': 'home-assistant-js-websocket',
   '@emotion/styled': '@emotion/styled',
@@ -26,6 +24,7 @@ const globals = {
   '@emotion/utils': '@emotion/utils',
   'zustand': 'zustand',
   'deep-object-diff': 'deep-object-diff',
+  '@floating-ui/react': '@floating-ui/react',
 };
 // https://vitejs.dev/config/
 export default defineConfig(configEnv => {
@@ -51,7 +50,7 @@ export default defineConfig(configEnv => {
             'src/**/**/*.{ts,tsx}',
             'src/**/locales/**/*.json',
           ], {
-            ignore: ['**/*stories.ts', '**/*stories.tsx', "**/*.test.{ts,tsx}"]
+            ignore: ['**/*stories.ts', '**/*stories.tsx', "**/*.test.{ts,tsx}", "**/*.code.{ts,tsx}"]
           }).map(file => {
             return [
             // The name of the entry point
@@ -89,8 +88,8 @@ export default defineConfig(configEnv => {
       }),
       react(),
       linterPlugin({
-        include: ['./src}/**/*.{ts,tsx}'],
-        linters: [new EsLinter({ configEnv: configEnv })],
+        include: ['./src/**/*.{ts,tsx}'],
+        linters: [new EsLinter({ configEnv })],
       }),
       dts({
         logLevel: 'silent',

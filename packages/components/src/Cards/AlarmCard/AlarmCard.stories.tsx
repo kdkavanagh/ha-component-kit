@@ -1,11 +1,12 @@
-import type { Meta, StoryObj, Args } from "@storybook/react";
-import { ThemeProvider, AlarmCard, Row, RelatedEntity } from "@components";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
+import { ThemeProvider, ThemeControlsModal, AlarmCard, Row, RelatedEntity } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Render(args?: Args) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row gap="2rem">
         <AlarmCard
           entity={"alarm_control_panel.home_alarm"}
@@ -27,15 +28,16 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/AlarmCard",
+  title: "components/Cards/AlarmCard",
   component: AlarmCard,
   tags: ["autodocs"],
   parameters: {
     fullWidth: true,
   },
 } satisfies Meta<typeof AlarmCard>;
+
 export type AlarmControlPanelStory = StoryObj<typeof AlarmCard>;
-export const AlarmCardExample: AlarmControlPanelStory = {
+export const Docs: AlarmControlPanelStory = {
   render: Render,
   args: {
     entity: "alarm_control_panel.home_alarm",

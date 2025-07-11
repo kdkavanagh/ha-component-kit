@@ -1,6 +1,6 @@
 // purposely adding js extensions here so the extensions stay in the output.
 import { connect } from './connection.js';
-import { generateServiceTypes } from './service-generator.js';
+import { generateActionTypes } from './action-generator.js';
 import { generateEntityType } from './entity-generator.js';
 import { writeFileSync } from 'fs';
 import { DEFAULT_FILENAME } from './constants.js';
@@ -42,8 +42,9 @@ export async function typeSync({
   // this is an auto generated file, do not change this manually
   `;
   
-  const { services, states } = await connect(url, token);
-  const serviceInterfaces = await generateServiceTypes(services, {
+  const { states, services } = await connect(url, token);
+  
+  const serviceInterfaces = await generateActionTypes(services, {
     domainWhitelist,
     domainBlacklist,
     serviceWhitelist,
@@ -51,7 +52,7 @@ export async function typeSync({
   });
   const output = custom ? `
     ${warning}
-    import { ServiceFunction, ServiceFunctionTypes, VacuumEntityState } from "@hakit/core";
+    import { ServiceFunction, ServiceFunctionTypes } from "@hakit/core";
     declare module '@hakit/core' {
       export interface CustomSupportedServices<T extends ServiceFunctionTypes = "target"> {
         ${serviceInterfaces}
@@ -68,7 +69,6 @@ export async function typeSync({
     }
   `;
   const outDir = _outDir || process.cwd();
-
   const formatted = prettier?.disable ? output: await format(output, {
     parser: 'typescript',
     ...prettier?.options
@@ -76,6 +76,6 @@ export async function typeSync({
   // now write the file
   writeFileSync(`${outDir}/${filename}`, formatted);
   console.info(`Succesfully generated types: ${outDir}/${filename}\n\n`);
-  // reminder to add the generated file to the tsconfig.json include array
-  console.info(`IMPORTANT: Don't forget to add the "${filename}" file to your tsconfig.json include array\n\n`);
+  // reminder to add the generated file to the tsconfig.app.json include array
+  console.info(`IMPORTANT: Don't forget to add the "${filename}" file to your tsconfig.app.json include array\n\n`);
 }

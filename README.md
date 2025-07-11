@@ -33,12 +33,21 @@
   </tr>
 </table>
 
-Unlock the ultimate customization for your Home Assistant dashboards with this package, leveraging React for seamless, personalized interfaces.
+## Take Your [Home Assistant](https://www.home-assistant.io/) Dashboards to the Next Level 🚀
+
+Designed with developers in mind, this powerful package is built on [React](https://react.dev/) to create seamless, highly customizable interfaces for your Home Assistant dashboards. Whether you're coding your own unique components or taking advantage of the prebuilt library from [@hakit/components](https://www.npmjs.com/package/@hakit/components), the possibilities are endless!
+
+##### 🏠 **Ultimate Flexibility**: Create stunning, personalized dashboards tailored to your needs.
+##### ⚡ **Powered by Home Assistant**: The [@hakit/core](https://www.npmjs.com/package/@hakit/core) leverages the official [Home Assistant WebSocket API](https://github.com/home-assistant/home-assistant-js-websocket) to handle authentication and core functionality, enabling a dynamic, real-time experience in your React dashboards.
+##### 🌍 **Effortless Deployment**: Host your dashboard on any web server or serve it directly from Home Assistant using the [Home Assistant Addon](https://github.com/shannonhochkins/ha-component-kit/blob/master/ADDON.md).
+##### 📅 **Future Goals**: While the package currently focuses on empowering developers, we're working on a future release that will introduce an intuitive drag-and-drop UI editor, enabling anyone to design dashboards effortlessly through the Home Assistant Addon.
+
+Ready to transform your Home Assistant experience? Dive into the [Getting Started](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/introduction-getting-started--docs) Guide and begin building today!
 
 
 ## Demo
 
-Visit the [Demo](https://shannonhochkins.github.io/ha-component-kit/iframe.html?args=&id=introduction-demo--default&viewMode=story#) to try it out!
+Visit the [Demo](https://shannonhochkins.github.io/ha-component-kit/iframe.html?args=&id=introduction-demo--demo&viewMode=story) to try it out!
 
 If you like anything here, be sure to 🌟 [the repo!](https://github.com/shannonhochkins/ha-component-kit)
 
@@ -88,7 +97,7 @@ There's a [Home Assistant Addon](ADDON.md) available which will serve your dashb
 - [TimeCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-timecard--docs)
 - [TriggerCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-triggercard--docs)
 - [WeatherCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-weathercard--docs)
-- [NEW VacuumCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-vacuumcard--docs)
+- [VacuumCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-vacuumcard--docs)
 
 ### Known Issues
 - Anything else? Please, if you notice anything that doesn't feel / look right, please report it, i rely on user testing to make improvements.

@@ -37,7 +37,6 @@ type OmitProperties =
   | "serviceData"
   | "service"
   | "disableRipples"
-  | "ref"
   | "disableActiveState"
   | "disableScale";
 export interface EntitiesCardProps extends Omit<CardBaseProps<"div", EntityName>, OmitProperties> {
@@ -46,7 +45,14 @@ export interface EntitiesCardProps extends Omit<CardBaseProps<"div", EntityName>
   /** include the last updated time, will apply to every row unless specified on an individual EntityItem @default false */
   includeLastUpdated?: boolean;
 }
-function _EntitiesCard({ includeLastUpdated = false, key, className, children, cssStyles, ...rest }: EntitiesCardProps): React.ReactNode {
+function InternalEntitiesCard({
+  includeLastUpdated = false,
+  key,
+  className,
+  children,
+  cssStyles,
+  ...rest
+}: EntitiesCardProps): React.ReactNode {
   const { useStore } = useHass();
   const globalComponentStyle = useStore((state) => state.globalComponentStyles);
   const childrenWithKeys = Children.map(children, (child, index) => {
@@ -89,7 +95,7 @@ export function EntitiesCard(props: EntitiesCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "EntitiesCard" })}>
-      <_EntitiesCard {...defaultColumns} {...props} />
+      <InternalEntitiesCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

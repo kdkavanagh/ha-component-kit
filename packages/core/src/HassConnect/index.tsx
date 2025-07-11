@@ -2,9 +2,9 @@ import { memo, useMemo, type ReactNode } from "react";
 import { useRef } from "react";
 import { HassProvider } from "./Provider";
 import type { HassProviderProps } from "./Provider";
-import { motion, AnimatePresence } from "framer-motion";
 import styled from "@emotion/styled";
 import { keyframes } from "@emotion/react";
+import { FetchLocale } from "./FetchLocale";
 
 export type HassConnectProps = {
   /** Any react node to render when authenticated */
@@ -19,12 +19,6 @@ export type HassConnectProps = {
   onReady?: () => void;
   /** options for the provider */
   options?: Omit<HassProviderProps, "children" | "hassUrl">;
-};
-
-const fadeIn = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-  exit: { opacity: 0 },
 };
 
 const blip = keyframes`
@@ -77,7 +71,7 @@ const Loader = styled(LoaderBase)`
   }
 `;
 
-const MotionDiv = styled(motion.div)`
+const Wrapper = styled.div`
   width: 100%;
   height: 100%;
 `;
@@ -99,6 +93,7 @@ export const HassConnect = memo(function HassConnect({
       // @see https://github.com/shannonhochkins/ha-component-kit/issues/146#issuecomment-2138352567
       return new URL(hassUrl).origin;
     } catch (e) {
+      console.log("Error:", e);
       return null;
     }
   }, [hassUrl]);
@@ -110,24 +105,24 @@ export const HassConnect = memo(function HassConnect({
   return (
     <HassProvider hassUrl={sanitizedUrl} hassToken={hassToken} {...options}>
       {(ready) => (
-        <AnimatePresence mode="wait">
+        <>
           {ready ? (
-            <MotionDiv key="children" initial="hidden" animate="visible" exit="exit" variants={fadeIn}>
-              {onReady &&
-                !onReadyCalled.current &&
-                ((() => {
-                  onReady();
-                  onReadyCalled.current = true;
-                })(),
-                null)}
-              {children}
-            </MotionDiv>
+            <Wrapper>
+              <FetchLocale locale={options.locale}>
+                {onReady &&
+                  !onReadyCalled.current &&
+                  ((() => {
+                    onReady();
+                    onReadyCalled.current = true;
+                  })(),
+                  null)}
+                {children}
+              </FetchLocale>
+            </Wrapper>
           ) : (
-            <MotionDiv key="loading" initial="hidden" animate="visible" exit="exit" variants={fadeIn}>
-              {loading}
-            </MotionDiv>
+            <Wrapper>{loading}</Wrapper>
           )}
-        </AnimatePresence>
+        </>
       )}
     </HassProvider>
   );

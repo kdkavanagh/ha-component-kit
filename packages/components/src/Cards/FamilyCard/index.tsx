@@ -84,8 +84,7 @@ type OmitProperties =
   | "rippleProps"
   | "borderRadius"
   | "disableActiveState"
-  | "onlyFunctionality"
-  | "ref";
+  | "onlyFunctionality";
 
 export interface FamilyCardProps extends Omit<CardBaseProps<"div", FilterByDomain<EntityName, "person">>, OmitProperties> {
   /** the children for the FamilyCard, it accepts Person components */
@@ -94,7 +93,7 @@ export interface FamilyCardProps extends Omit<CardBaseProps<"div", FilterByDomai
   title?: string;
 }
 
-function _FamilyCard({ title, key, cssStyles, children, className, ...rest }: FamilyCardProps): React.ReactNode {
+function InternalFamilyCard({ title, key, cssStyles, children, className, ...rest }: FamilyCardProps): React.ReactNode {
   const { useStore } = useHass();
   const globalComponentStyle = useStore((state) => state.globalComponentStyles);
   const len = Children.count(children);
@@ -104,7 +103,7 @@ function _FamilyCard({ title, key, cssStyles, children, className, ...rest }: Fa
       // if they've defined columns, we don't want to override it
       const columns: BreakPoint[] = ["xxs", "xs", "sm", "md", "lg", "xlg"];
       const hasColumnDefinition = columns.some((key) => typeof child.props[key] === "number");
-      const disableColumns = hasColumnDefinition ? false : child.props.disableColumns ?? true;
+      const disableColumns = hasColumnDefinition ? false : (child.props.disableColumns ?? true);
       return cloneElement(child, {
         key: child.key || index,
         className: disableColumns ? `entity-count-${count}` : "",
@@ -164,7 +163,7 @@ export function FamilyCard(props: FamilyCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "FamilyCard" })}>
-      <_FamilyCard {...defaultColumns} {...props} />
+      <InternalFamilyCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

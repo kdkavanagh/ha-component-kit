@@ -3,16 +3,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import spawn from 'cross-spawn';
 import prompts from 'prompts';
-import minimist from 'minimist';
 import { execSync } from 'child_process';
+import axios from 'axios';
+import { createLongLivedTokenAuth } from 'home-assistant-js-websocket';
 import {
   red,
-  blue,
   yellow,
   green,
   cyan,
   reset,
+  white,
+  gray,
 } from 'kolorist';
+import { validateConnection } from './socket';
+// methods
 
 const FILES_TO_REMOVE = [
   'public',
@@ -29,12 +33,6 @@ const mergeFiles: Record<string, string> = {
   "README.md": "README.md",
 }
 
-// Avoids autoconversion to number of the project name by defining that the args
-// non associated with an option ( _ ) needs to be parsed as a string. See #4606
-const argv = minimist<{
-  t?: string
-  template?: string
-}>(process.argv.slice(2), { string: ['_'] });
 const cwd = process.cwd();
 
 const defaultTargetDir = 'ha-dashboard';
@@ -49,46 +47,79 @@ const getLatestNpmVersion = (packageName: string): string => {
   }
 };
 
+async function validateHaUrl(haUrl: string): Promise<void> {
+  try {
+    const response = await axios.get(haUrl);
+    if (response.status === 200) {
+      console.log(green(`\n✔ Validated that HA URL "${haUrl}" is reachable.`));
+    } else {
+      throw new Error(`Unexpected response status: ${response.status}`);
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : JSON.stringify(e);
+    throw new Error(`Failed to reach HA URL "${haUrl}": ${message}`);
+  }
+}
+
 
 // A functional approach to creating the project
-const createProject = async () => {
+const createProject = async () => {  
   try {
-    const argTargetDir = formatTargetDir(argv._[0]);
-    // const argTemplate = argv.template || argv.t
-    let targetDir = argTargetDir || defaultTargetDir;
     let result: prompts.Answers<
-      'projectName' | 'haUrl'
+      'projectName' | 'haUrl' | 'haToken'
     >;
     let abort = false;
     try {
       result = await prompts(
         [
           {
-            type: argTargetDir ? null : 'text',
+            type: 'text',
             name: 'projectName',
             message: reset('Project name:'),
             initial: defaultTargetDir,
-            onState: (state) => {
-              targetDir = formatTargetDir(state.value) || defaultTargetDir
-            },
+            format: value => formatTargetDir(value)
           },
           {
-            type: argTargetDir ? null : 'text',
+            type: 'text',
             name: 'haUrl',
-            initial: 'http://homeassistant.local:8123',
-            message: reset('HA Url:'),
+            message: reset('HA Url (Recommended to use a public https url):'),
+            validate: value => {
+              try {
+                const url = new URL(value);
+                if (!['http:', 'https:'].includes(url.protocol)) {
+                  return 'The URL must start with http:// or https://';
+                }
+                return true;
+              } catch {
+                return 'The URL is not valid';
+              }
+            },
+            format: value => {
+              try {
+                const url = new URL(value);
+                return `${url.protocol}//${url.host}`;
+              } catch {
+                return value; // Shouldn't hit this because of validation
+              }
+            }
           },
+          {
+            type: 'password',
+            name: 'haToken',
+            message: reset('(optional) HA Token:'),
+            initial: '',
+          }
         ],
         {
           onCancel: () => {
             abort = true;
             throw new Error(red('✖') + ' Operation cancelled')
-          },
+          }
         },
       )
-    } catch (cancelled: any) {
+    } catch (cancelled) {
       abort = true;
-      console.info(cancelled.message);
+      console.info(cancelled);
       return;
     }
 
@@ -97,17 +128,39 @@ const createProject = async () => {
     }
 
     // user choice associated with prompts
-    const { projectName, haUrl } = result;
+    const { projectName, haUrl, haToken } = result;
 
+    if (haUrl && haToken) {
+      try {
+        const auth = await createLongLivedTokenAuth(haUrl, haToken);
+        const response = await validateConnection(auth.wsUrl, auth.accessToken);
+        console.log(green(`\n✔ ${response}`));
+      } catch (e) {
+        console.error(red(`✖ Failed to connect to Home Assistant: ${e}`));
+        process.exit(1);
+      }
+    } else if (haUrl) {
+      try {
+        await validateHaUrl(haUrl);
+      } catch (e) {
+        console.error(red(`✖ ${e}`));
+        process.exit(1);
+      }
+    }
+    console.log(cyan(`Scaffolding Hakit in ${cyan(projectName)}...`));
     const viteCommand = `npm create vite@latest ${projectName} -- --template react-ts`;
 
     const [command, ...args] = viteCommand.split(' ')
     const { status } = spawn.sync(command, args, {
       stdio: 'inherit',
     });
+    // now clear the terminal and print out the next steps
+    process.stdout.write('\x1Bc');
 
-    FILES_TO_REMOVE.forEach((file) => removeFileOrDirectory(path.resolve(targetDir, file)));
-    const root = path.join(cwd, targetDir)
+    console.log(cyan('Post creation tasks...'));
+
+    FILES_TO_REMOVE.forEach((file) => removeFileOrDirectory(path.resolve(projectName, file)));
+    const root = path.join(cwd, projectName)
     const cdProjectName = path.relative(cwd, root);
     const templateDir = path.resolve(
       fileURLToPath(import.meta.url),
@@ -121,35 +174,62 @@ const createProject = async () => {
       write(file, root, templateDir);
     }
 
-    updateTsconfig(targetDir, root, templateDir);
+    updateTsconfig(projectName, root, templateDir);
     updatePackageJson({
-      targetDir,
+      targetDir: projectName,
       root,
       templateDir,
     });
     updateViteFile({
-      targetDir,
+      targetDir: projectName,
       root,
       templateDir,
     })
-    updateReadme(targetDir, root, templateDir);
+    updateReadme(projectName, root, templateDir);
+    updateNvmRC(root, templateDir);
 
     write('src/index.css', root, templateDir, `#root { width: 100%; height: 100%; }`);
 
-    const envFile = path.resolve(targetDir, '.env');
-    let envFileContent = fs.readFileSync(envFile, 'utf-8');
+    const envFile = path.resolve(projectName, '.env');
+    const envFileContent = fs.readFileSync(envFile, 'utf-8');
     write('.env', root, templateDir, envFileContent
       .replace('{FOLDER_NAME}', cdProjectName)
       .replace('VITE_HA_URL=', `VITE_HA_URL=${(haUrl ?? '').replace(/\/$/, '')}`));
+    // now update the .env.development file
+    const envDevFile = path.resolve(projectName, '.env.development');
+    const envDevFileContent = fs.readFileSync(envDevFile, 'utf-8');
+    write('.env.development', root, templateDir, envDevFileContent
+      .replace('VITE_HA_TOKEN=', `VITE_HA_TOKEN=${haToken}`));
 
-    if (haUrl.startsWith('https')) {
-      console.info(blue(`\nNEXT STEPS: SYNC: Ensure you update ${cdProjectName}/.env with your VITE_HA_TOKEN`));
-      console.info(green(`\nNEXT STEPS: SYNC: Once you've updated the .env file, run "npm run sync" to generate your types!`));
-    } else {
-      console.info(yellow(`\nWARN: You're using an insecure connection and the \`npm run sync\` functionality will not work unless used with https protocol. Update the ./sync-types "url" value to use a secure connection to use the typescript sync feature.`));
+    console.info(green(`\n✔ Success! Next steps:`));
+    // now let's print out the steps in one log
+    const steps = [
+      `cd ${projectName}`,
+      `npm install`,
+      `## Optional: Will generate typescript types for your Home Assistant instance`,
+      haToken ? `npm run sync` : '',
+      `npm run dev`,
+    ].filter(x => !!x);
+
+    // now, print out the steps, if there's a step with ## in the name, do not prefix with  a number
+    let stepTracker = 0;
+    const generatedSteps = steps.map((step) => {
+      if (step.startsWith('##')) {
+        return gray(`  ${step}`);
+      }
+      stepTracker++;
+      return white(`  ${stepTracker}. ${step}`);
+    });
+
+    console.info(`\n${generatedSteps.join('\n')}`);
+
+    if (!haToken) {
+      console.info(yellow(`\nWARN: You didn't provide a token and the \`npm run sync\` functionality will not work without one. Update the VITE_HA_TOKEN value in the .env file.`));
     }
-    console.info(cyan(`\nNEXT STEPS: DEPLOY: Add in the optional SSH values to ensure that "npm run deploy" will work correctly.`));
-    console.info(cyan(`\nNEXT STEPS: DEPLOY: To retrieve the SSH information, follow the instructions here: https://shannonhochkins.github.io/ha-component-kit/?path=/docs/introduction-deploying--docs`));
+    console.info(cyan(`\nDEPLOYING`));
+
+    console.info(white(`\nAdd in the optional SSH values to your .env file to ensure that "npm run deploy" will work correctly.`));
+    console.info(white(`\nTo retrieve the SSH information, follow the instructions here: https://shannonhochkins.github.io/ha-component-kit/?path=/docs/introduction-deploying--docs`));
     console.info();
     process.exit(status ?? 0)
 
@@ -229,17 +309,25 @@ function updatePackageJson({
   root: string;
   templateDir: string;
 }) {
+  const reactVersion = getLatestNpmVersion('react');
+  const reactDomVersion = getLatestNpmVersion('react-dom');
+  // now the types
+  const typesReactVersion = getLatestNpmVersion('@types/react');
+  const typesReactDomVersion = getLatestNpmVersion('@types/react-dom');
   const coreVersion = getLatestNpmVersion('@hakit/core');
   const componentsVersion = getLatestNpmVersion('@hakit/components');
   const prettierVersion = getLatestNpmVersion('prettier');
   const dotenvVersion = getLatestNpmVersion('dotenv');
   const nodeScpVersion = getLatestNpmVersion('node-scp');
   const chalk = getLatestNpmVersion('chalk');
+  const prompts = getLatestNpmVersion('prompts');
   const nodeTypesVersion = getLatestNpmVersion('@types/node');
   const packageFile = path.resolve(targetDir, 'package.json');
   const pkg = JSON.parse(fs.readFileSync(packageFile, 'utf-8'));
   pkg.dependencies = {
     ...pkg.dependencies,
+    react: `^${reactVersion}`,
+    'react-dom': `^${reactDomVersion}`,
     '@hakit/core': `^${coreVersion}`,
     '@hakit/components': `^${componentsVersion}`,
   };
@@ -249,12 +337,15 @@ function updatePackageJson({
     "dotenv": `^${dotenvVersion}`,
     "@types/node": `^${nodeTypesVersion}`,
     "node-scp": `^${nodeScpVersion}`,
+    "prompts": `^${prompts}`,
     "chalk": `^${chalk}`,
+    "@types/react": `^${typesReactVersion}`,
+    "@types/react-dom": `^${typesReactDomVersion}`,
   };
   pkg.scripts = {
     ...pkg.scripts,
     "prettier": "prettier --write .",
-    "sync": "npx tsx ./sync-types.ts",
+    "sync": "npx tsx scripts/sync-types.ts",
     "prebuild": "npm run prettier",
     "deploy": "npx tsx scripts/deploy.ts"
   }
@@ -323,6 +414,12 @@ function updateReadme(targetDir: string, root: string, templateDir: string) {
   const readmeFileTemplateContents = fs.readFileSync(readmeFileTemplate, 'utf-8');
 
   write('README.md', root, templateDir, `${readmeFileTemplateContents}${readmeFileContents}`);
+}
+
+function updateNvmRC(root: string, templateDir: string) {
+  // get the current node version from the user
+  const nodeVersion = process.version;
+  write('.nvmrc', root, templateDir, nodeVersion);
 }
 
 createProject().catch((e) => {

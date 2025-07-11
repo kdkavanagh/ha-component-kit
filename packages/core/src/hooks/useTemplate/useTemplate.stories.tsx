@@ -1,29 +1,11 @@
-import { Story, Source, Title, Description, ArgTypes } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description, ArgTypes } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useTemplate, useEntity } from "@hakit/core";
-import { ThemeProvider, Column, Alert, Row, FabCard } from "@components";
+import { ThemeProvider, Column, Alert, Row, FabCard, ThemeControlsModal } from "@components";
 import { HassConnect } from "@hass-connect-fake";
-
-const templateCodeToProcess = `
-{% if is_state(entity_id, "on") %}
-  The entity is on!!
-{% else %}
-  The entity is not on!!
-{% endif %}
-`;
-
-const exampleUsage = `
-import { useTemplate } from "@hakit/core";
-function RenderCustomTemplate() {
-  const template = useTemplate({
-    template: templateCodeToProcess,
-    variables: { entity_id: 'light.fake_light_1' }
-  });
-  return <>
-    Template result: {template ?? 'loading'}
-  </>
-}
-`;
+import { templateCodeToProcess } from "./examples/constants";
+import basicExample from "./examples/basic.code?raw";
+import simpleExample from "./examples/simple.code?raw";
 
 function SubscribeTemplateExample() {
   const entity = useEntity("light.fake_light_1");
@@ -49,7 +31,7 @@ function SubscribeTemplateExample() {
       <Source dark code={`// templateCodeToProcess\r${templateCodeToProcess}`} />
       <Alert type="info" title={`Template result: ${template ?? "loading"}`} />
       <Alert type="warning" title="Here's the source code for the above template example:" cssStyles={`margin-top: 2rem;`} />
-      <Source dark code={exampleUsage} />
+      <Source dark code={basicExample} />
     </Column>
   );
 }
@@ -57,7 +39,8 @@ function SubscribeTemplateExample() {
 function Template() {
   return (
     <HassConnect hassUrl="http://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column fullWidth gap="1rem" alignItems="flex-start" justifyContent="flex-start">
         <SubscribeTemplateExample />
       </Column>
@@ -66,7 +49,7 @@ function Template() {
 }
 
 export default {
-  title: "HOOKS/useTemplate",
+  title: "core/hooks/useTemplate",
   component: Template,
   tags: ["autodocs"],
   parameters: {
@@ -81,14 +64,9 @@ export default {
           </h5>
           <Description />
           <ArgTypes />
-          <p>The following is the use of the hook in it's default form:</p>
-          <Source
-            dark
-            code={`const template = useTemplate({
-  template: '{{ is_state_attr("climate.air_conditioner", "state", "heat") }}',
-});`}
-          />
-          <p>Here's a working example of how this hook functions when connected to entities:</p>
+          <p>The following is the use of the hook in it&apos;s default form:</p>
+          <Source dark code={simpleExample} />
+          <p>Here&apos;s a working example of how this hook functions when connected to entities:</p>
           <Template />
         </>
       ),

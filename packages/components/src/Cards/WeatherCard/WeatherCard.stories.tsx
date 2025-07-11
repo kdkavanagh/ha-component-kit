@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, Column, WeatherCard, WeatherCardDetail } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, Column, WeatherCard, ThemeControlsModal, WeatherCardDetail } from "@components";
 import type { WeatherCardProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 import { HassEntityWithService } from "@hakit/core";
@@ -17,19 +17,21 @@ function convertUvIndexToText(uvi: number | null): string | null {
 function Template(args?: Partial<WeatherCardProps>) {
   return (
     <HassConnect hassUrl="https://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column gap="1rem">
         <WeatherCard
           entity="weather.entity"
           {...args}
           details={[
             <WeatherCardDetail
+              key="x"
               entity="sensor.openweathermap_uv_index"
               render={(entity: HassEntityWithService<"sensor">) => {
                 return <span>UVI - {convertUvIndexToText(Number(entity.state))}</span>;
               }}
             />,
-            <WeatherCardDetail entity="sensor.openweathermap_pressure" />,
+            <WeatherCardDetail entity="sensor.openweathermap_pressure" key="y" />,
           ]}
         />
         <p>Hourly, with 2 separate rows:</p>
@@ -47,14 +49,15 @@ function WithSensors(args?: Partial<WeatherCardProps>) {
         entity="weather.openweathermap"
         details={[
           <WeatherCardDetail
+            key="a"
             entity="sensor.openweathermap_uv_index"
             render={(entity: HassEntityWithService<"sensor">) => {
               return <span>UVI - {convertUvIndexToText(Number(entity.state))}</span>;
             }}
           />,
-          <WeatherCardDetail entity="sensor.openweathermap_pressure" />,
-          <WeatherCardDetail entity="sensor.openweathermap_humidity" icon="mdi:water-percent" />,
-          <WeatherCardDetail entity="sensor.openweathermap_wind_speed" />,
+          <WeatherCardDetail entity="sensor.openweathermap_pressure" key="b" />,
+          <WeatherCardDetail entity="sensor.openweathermap_humidity" icon="mdi:water-percent" key="c" />,
+          <WeatherCardDetail entity="sensor.openweathermap_wind_speed" key="d" />,
         ]}
         {...args}
       />
@@ -81,7 +84,7 @@ function WithoutCurrent(args?: Partial<WeatherCardProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/WeatherCard",
+  title: "components/Cards/WeatherCard",
   component: WeatherCard,
   tags: ["autodocs"],
   parameters: {
@@ -95,7 +98,7 @@ export default {
   },
 } satisfies Meta<typeof WeatherCard>;
 export type WeatherStory = StoryObj<typeof WeatherCard>;
-export const WeatherExample: WeatherStory = {
+export const Docs: WeatherStory = {
   render: Template,
   args: {},
 };

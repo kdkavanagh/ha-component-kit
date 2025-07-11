@@ -1,11 +1,12 @@
-import type { Meta, StoryObj, Args } from "@storybook/react";
-import { ThemeProvider, TriggerCard, Column } from "@components";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
+import { ThemeProvider, TriggerCard, Column, ThemeControlsModal } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Render(args?: Args) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column gap="1rem" fullWidth>
         <TriggerCard
           entity="scene.good_morning"
@@ -39,7 +40,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/TriggerCard",
+  title: "components/Cards/TriggerCard",
   component: TriggerCard,
   tags: ["autodocs"],
   parameters: {
@@ -51,7 +52,7 @@ export default {
   },
 } satisfies Meta<typeof TriggerCard>;
 export type Story = StoryObj<typeof TriggerCard>;
-export const Example: Story = {
+export const Docs: Story = {
   render: Render,
   args: {},
 };

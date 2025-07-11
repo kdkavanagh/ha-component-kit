@@ -1,6 +1,6 @@
 import { useGesture } from "@use-gesture/react";
 import { svgArc } from "./svg-arc";
-import React, { useRef, useEffect, useCallback, useState, useMemo } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo } from "react";
 import styled from "@emotion/styled";
 import { clamp, isNumber } from "lodash";
 import { fallback } from "@components";
@@ -215,7 +215,7 @@ export interface ControlSliderCircularProps extends Omit<React.ComponentPropsWit
   onChangeApplied?: (value: number, type: ActiveSlider) => void;
 }
 
-function _ControlSliderCircular({
+function InternalControlSliderCircular({
   step = 1,
   inactive,
   label,
@@ -448,15 +448,29 @@ function _ControlSliderCircular({
     [dual, localHigh, localLow, max, min],
   );
 
-  const triggerOnChangeApplied = useDebouncedCallback((updatedValue: number, type: ActiveSlider) => {
-    if (typeof onChangeApplied !== "function") return;
-    onChangeApplied(updatedValue, type);
-  }, 100);
+  const triggerOnChangeApplied = useDebouncedCallback(
+    (updatedValue: number, type: ActiveSlider) => {
+      if (typeof onChangeApplied !== "function") return;
+      onChangeApplied(updatedValue, type);
+    },
+    100,
+    {
+      trailing: true,
+      leading: true,
+    },
+  );
 
-  const triggerOnChange = useThrottledCallback((updatedValue: number, type: ActiveSlider) => {
-    if (typeof onChange !== "function") return;
-    onChange(updatedValue, type);
-  }, 20);
+  const triggerOnChange = useThrottledCallback(
+    (updatedValue: number, type: ActiveSlider) => {
+      if (typeof onChange !== "function") return;
+      onChange(updatedValue, type);
+    },
+    20,
+    {
+      trailing: true,
+      leading: true,
+    },
+  );
 
   const bind = useGesture(
     {
@@ -568,7 +582,7 @@ function _ControlSliderCircular({
 export function ControlSliderCircular(props: ControlSliderCircularProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "ControlSliderCircular" })}>
-      <_ControlSliderCircular {...props} />
+      <InternalControlSliderCircular {...props} />
     </ErrorBoundary>
   );
 }

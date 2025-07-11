@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Column, RangeSlider, Row, FabCard, Tooltip, Alert } from "@components";
 import styled from "@emotion/styled";
-import { LIGHT, DARK, ACCENT, DEFAULT_THEME_OPTIONS } from "./constants";
+import { LIGHT, DARK, ACCENT } from "./constants";
 import { useDebouncedCallback } from "use-debounce";
 import { capitalize } from "lodash";
+import { useThemeStore, type ThemeStore } from "./store";
 
 const Title = styled.span`
   font-size: 0.9rem;
@@ -23,25 +24,10 @@ const RangeSliderBox = styled.div`
   border-radius: 0.5rem;
 `;
 
-export interface ThemeControlsProps {
-  hue?: number;
-  saturation?: number;
-  lightness?: number;
-  tint?: number;
-  contrastThreshold?: number;
-  darkMode?: boolean;
-  onChange: (theme: Omit<ThemeControlsProps, "onChange">) => void;
-}
-
-export function ThemeControls({
-  darkMode = DEFAULT_THEME_OPTIONS.darkMode,
-  tint = DEFAULT_THEME_OPTIONS.tint,
-  hue = DEFAULT_THEME_OPTIONS.hue,
-  saturation = DEFAULT_THEME_OPTIONS.saturation,
-  lightness = DEFAULT_THEME_OPTIONS.lightness,
-  contrastThreshold = DEFAULT_THEME_OPTIONS.contrastThreshold,
-  onChange,
-}: ThemeControlsProps) {
+export function ThemeControls() {
+  const theme = useThemeStore((state) => state.theme);
+  const setTheme = useThemeStore((state) => state.setTheme);
+  const { hue, saturation, lightness, tint, contrastThreshold, darkMode } = theme;
   const [h, setHue] = useState(hue);
   const [l, setLight] = useState(lightness);
   const [t, setTint] = useState(tint);
@@ -49,11 +35,16 @@ export function ThemeControls({
   const [dark, setDark] = useState(darkMode);
   const [c, setContrastThreshold] = useState(contrastThreshold);
 
-  const debouncedOnChange = useDebouncedCallback((_theme: Required<Omit<ThemeControlsProps, "onChange">>) => {
-    if (typeof onChange === "function") {
-      onChange(_theme);
-    }
-  }, 50);
+  const debouncedOnChange = useDebouncedCallback(
+    (_theme: ThemeStore["theme"]) => {
+      setTheme(_theme);
+    },
+    50,
+    {
+      trailing: true,
+      leading: true,
+    },
+  );
 
   useEffect(() => {
     debouncedOnChange({
@@ -84,7 +75,7 @@ export function ThemeControls({
             max={1}
             step={0.05}
             value={t}
-            onChange={(value) => {
+            onChangeComplete={(value) => {
               setTint(value);
             }}
           />
@@ -97,7 +88,7 @@ export function ThemeControls({
             max={100}
             step={1}
             value={c}
-            onChange={(value) => {
+            onChangeComplete={(value) => {
               setContrastThreshold(value);
             }}
           />
@@ -111,7 +102,7 @@ export function ThemeControls({
             min={0}
             max={100}
             value={s}
-            onChange={(value) => {
+            onChangeComplete={(value) => {
               setSat(value);
             }}
           />
@@ -123,7 +114,7 @@ export function ThemeControls({
             min={0}
             max={100}
             value={l}
-            onChange={(value) => {
+            onChangeComplete={(value) => {
               setLight(value);
             }}
           />
@@ -136,7 +127,7 @@ export function ThemeControls({
           min={0}
           max={360}
           value={h}
-          onChange={(value) => {
+          onChangeComplete={(value) => {
             setHue(value);
           }}
         />
@@ -154,7 +145,7 @@ export function ThemeControls({
         />
       </Row>
       <Row justifyContent="flex-start" fullWidth>
-        <Alert>Hover over the pallette's below to see the respective css variables.</Alert>
+        <Alert>Hover over the pallette&apos;s below to see the respective css variables.</Alert>
       </Row>
       <Row wrap="nowrap" fullWidth justifyContent="flex-start">
         {LIGHT.map((color, index) => {
@@ -339,7 +330,7 @@ export function ThemeControls({
 
       {["info", "success", "error", "warning"].map((color, _index) => {
         return (
-          <Row fullWidth justifyContent="flex-start">
+          <Row fullWidth justifyContent="flex-start" key={_index}>
             {[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1].map((shade, index) => {
               const suffix = shade === 1 ? "" : `-a${index + 1}`;
               return (

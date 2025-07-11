@@ -1,5 +1,5 @@
-import { Story, Source, Title, Description } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { Tabs, Tab, Divider, Box} from '@mui/material';
 import { DEFAULT_FILENAME } from '../packages/core/scripts/sync-user-types/constants';
@@ -49,7 +49,7 @@ function Template() {
       </li>
       <li style={{
         marginTop: 24
-      }}>Create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token" target="_blank">Long Lived Access Token</a> for your home assistant instance. You can create one in your home assistant instance at the bottom of your profile page.</li>
+      }}>Create a <a href="https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token" target="_blank" rel="noreferrer">Long Lived Access Token</a> for your home assistant instance. You can create one in your home assistant instance at the bottom of your profile page under the &quot;security&quot; tab.</li>
     </ol>
     <Divider />
 
@@ -100,8 +100,8 @@ const { typeSync } = require('@hakit/core/sync');
 
 async function runner() {
   await typeSync({
-    url: 'https://rwdwrtzkr59smlxgb934b72q647a3zr1.ui.nabu.casa',
-    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJmN2M1YzkwYmYxMGM0ZjI2YjdkYjI4NDI1MDI3YWViZSIsImlhdCI6MTY5MjU5NDQ1MCwiZXhwIjoyMDA3OTU0NDUwfQ.QbdMf_A0nVovZNyV5ZPpeRaqWfz4NwWnXuhV5pQ0WCw'
+    url: 'YOUR_HOME_ASSISTANT_URL',
+    token: 'YOUR_LONG_LIVED_TOKEN'
   })
 }
 
@@ -146,11 +146,11 @@ runner();
     `} />
 
     <h2>Result</h2>
-    <p>If successful, when you import a hook of say "useEntity" you should get complete intellisense for services and entities!</p>
+    <p>If successful, when you import a hook of say &quot;useEntity&quot; you should get complete intellisense for services and entities!</p>
 
     <h1>Extending Entities</h1>
-    <p>By default, @hakit/core will support all defined entities that the home assistant repository also supports, there may be cases for you to extend or add your own types for domains that aren't pre-processed.</p>
-    <p>For example, if the base types for the calendar domain aren't up to scratch, you can create your own extension of the types.</p>
+    <p>By default, @hakit/core will support all defined entities that the home assistant repository also supports, there may be cases for you to extend or add your own types for domains that aren&apos;t pre-processed.</p>
+    <p>For example, if the base types for the calendar domain aren&apos;t up to scratch, you can create your own extension of the types.</p>
     <p>First, create a file called <mark>custom-entities.d.ts</mark> in the root of your project.</p>
     <p>Then, add the following code:</p>
     <Source dark code={`
@@ -166,7 +166,7 @@ declare module "@hakit/core" {
   }
 }
     `} />
-    <p>Then link this to the includes array of your tsconfig.json</p>
+    <p>Then link this to the includes array of your tsconfig.json/tsconfig.app.json:</p>
     <Source dark code={`
 // tsconfig.json
 {

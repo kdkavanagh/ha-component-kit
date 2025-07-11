@@ -1,5 +1,5 @@
-import { Story, Source, Title, Description } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LocaleKeys, locales } from "@hakit/core";
 import {
   FormControl,
@@ -17,7 +17,12 @@ import Popper from "@mui/material/Popper";
 import { styled } from "@mui/material/styles";
 import Select, { SelectChangeEvent } from "@mui/material/Select";
 import { VariableSizeList, ListChildComponentProps } from "react-window";
-import { Column, Row } from "@hakit/components";
+import { Column, Row } from "@components";
+import useLocaleExample from "./examples/useLocale.code?raw";
+import findReplaceExample from "./examples/findReplace.code?raw";
+import localesConstantExample from "./examples/localesConstant.code?raw";
+import localizeFunctionExample from "./examples/localizeFunction.code?raw";
+import useLocalesExample from "./examples/useLocales.code?raw";
 
 const ITEM_HEIGHT = 48;
 
@@ -37,7 +42,7 @@ const OuterElementType = React.forwardRef<HTMLDivElement>((props, ref) => {
   const outerProps = React.useContext(OuterElementContext);
   return <div ref={ref} {...props} {...outerProps} />;
 });
-0;
+OuterElementType.displayName = "OuterElementType";
 
 function useResetCache(data: number) {
   const ref = React.useRef<VariableSizeList>(null);
@@ -51,11 +56,13 @@ function useResetCache(data: number) {
 
 const ListboxComponent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLElement>>(function ListboxComponent(props, ref) {
   const { children, ...other } = props;
-  const itemData: React.ReactElement[] = [];
-  (children as React.ReactElement[]).forEach((item: React.ReactElement & { children?: React.ReactElement[] }) => {
-    itemData.push(item);
-    itemData.push(...(item.children || []));
-  });
+  const itemData: React.ReactElement<HTMLElement>[] = [];
+  (children as React.ReactElement<HTMLElement>[]).forEach(
+    (item: React.ReactElement<HTMLElement> & { children?: React.ReactElement<HTMLElement>[] }) => {
+      itemData.push(item);
+      itemData.push(...(item.children || []));
+    },
+  );
   const itemCount = itemData.length;
   const height = Math.min(8, itemCount) * ITEM_HEIGHT;
   const gridRef = useResetCache(itemCount);
@@ -186,102 +193,62 @@ function Page() {
 
       {selectedKey && (
         <>
-          <h2>Key usage for "{selectedKey}"</h2>
+          <h2>Key usage for &quot;{selectedKey}&quot;</h2>
           <p>
             A simple method you can import and use where ever you like as long as the component is rendered within HassConnect or it will
             just return the key name.
           </p>
           <Source
             dark
-            code={`
-// usage with the localize function
-import { localize } from '@hakit/core';
-export function MyComponent() {
-  const value = localize('${selectedKey}');
-  return <>{value}</>; // should translate to "${data?.[selectedKey as LocaleKeys]}"
-}
-      `}
+            code={localizeFunctionExample
+              .replace(" as LocaleKeys", "")
+              .replace(/{{selectedKey}}/g, selectedKey)
+              .replace(/{{value}}/g, data?.[selectedKey as LocaleKeys] || "")}
           />
-          <p>You can also use the useLocale hook which is less likely to be something you'll use but it is available.</p>
+          <p>You can also use the useLocale hook which is less likely to be something you&apos;ll use but it is available.</p>
           <Source
             dark
-            code={`
-// usage with the localize function
-import { useLocale } from '@hakit/core';
-export function MyComponent() {
-  const value = useLocale('${selectedKey}');
-  return <>{value}</>; // should translate to "${data?.[selectedKey as LocaleKeys]}"
-}
-      `}
+            code={useLocaleExample
+              .replace(" as LocaleKeys", "")
+              .replace(/{{selectedKey}}/g, selectedKey)
+              .replace(/{{value}}/g, data?.[selectedKey as LocaleKeys] || "")}
           />
         </>
       )}
 
-      <h2>Examples</h2>
+      <h2>useLocales hook</h2>
       <p>
-        This hook will simply return all available locales retrieved from Home Assistant, you don't need to use this hook at all unless you
-        want to transform the value or inspect all values available. You can use the `localize` method directly anywhere in your
+        This hook will simply return all available locales retrieved from Home Assistant, you don&apos;t need to use this hook at all unless
+        you want to transform the value or inspect all values available. You can use the `localize` method directly anywhere in your
         application.
       </p>
-      <Source
-        dark
-        code={`
-  import { useLocales } from '@hakit/core';
-  export function MyComponent() {
-  const locales = useLocales();
-  return <>{Object.keys(locales).join(', ')}</>;
-  }
-      `}
-      />
+      <Source dark code={useLocalesExample} />
 
-      <p>If you want to find/replace a value that's expected to be dynamic as it might contain a value wrapped in curly braces:</p>
-      <Source
-        dark
-        code={`
-  import { localize, useCalendar } from '@hakit/core';
-  export function MyComponent() {
-  const calendar = useCalendar('calendar.mycal');
-  return <>{localize('panel.calendar', {
-  search: '{state}',
-  replace: calendar.state,
-  fallback: 'Calendar is not available' // this will be used if \`panel.calendar\` is not available in the locales
-  })}</>;
-  }
-      `}
-      />
+      <h3>Find and replace</h3>
 
+      <p>If you want to find/replace a value that&apos;s expected to be dynamic as it might contain a value wrapped in curly braces:</p>
+      <Source dark code={findReplaceExample} />
+      <h3>Fetch Locales</h3>
       <p>
         This is a list of all the available locales, including their hash names, but also including a fetch method which will download the
         assets and cache locally
       </p>
+      <blockquote>
+        <b>NOTE:</b> This is an example, you do NOT need to do this, it&apos;s automatically handled through HassConnect and retrieved from
+        your home assistant instance.
+      </blockquote>
+      <Source dark code={localesConstantExample} />
       <p>
-        Note: This is an example, you do NOT need to do this, it's automatically handled through HassConnect and retrieved from your home
-        assistant instance.
-      </p>
-      <Source
-        dark
-        code={`
-  import { locales } from '@hakit/core';
-  const locale = locales.find(({ code }) => code === 'en');
-
-  async function fetchEnLocale() {
-  const data = await locale.fetch();
-  console.log(data)
-  return data;
-  }
-    `}
-      />
-      <p>
-        Most of the time, what's available may work just fine for you, however if you want to replace the locales that the localize function
-        uses across the board, you can call `updateLocales` manually, however this will not update the types for LocaleKeys so you'll need
-        to most likely create a wrapping function for localize with your matching types.
+        Most of the time, what&apos;s available may work just fine for you, however if you want to replace the locales that the localize
+        function uses across the board, you can call `updateLocales` manually, however this will not update the types for LocaleKeys so
+        you&apos;ll need to most likely create a wrapping function for localize with your matching types.
       </p>
     </>
   );
 }
 
 export default {
-  title: "HOOKS/useLocales",
+  title: "core/hooks/useLocales",
   tags: ["autodocs"],
   parameters: {
     centered: true,

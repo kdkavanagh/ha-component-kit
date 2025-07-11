@@ -1,8 +1,9 @@
-import React, {
+import {
   useCallback,
   useMemo,
   useRef,
   useEffect,
+  type ReactNode,
 } from "react";
 import type {
   HassEntities,
@@ -13,12 +14,13 @@ import type {
 } from "home-assistant-js-websocket";
 import { Connection, HassEntity } from "home-assistant-js-websocket";
 import type {
-  ServiceData,
   DomainService,
   SnakeOrCamelDomains,
-  Target,
   Route,
   Store,
+  CallServiceArgs,
+  HassContextProps,
+  ServiceResponse,
 } from "@hakit/core";
 import { isArray, isEmpty } from "lodash";
 import { HassContext, updateLocales, locales } from '@hakit/core';
@@ -32,20 +34,13 @@ import { mockCallApi } from './mocks/fake-call-api';
 import reolinkSnapshot from './assets/reolink-snapshot.jpg';
 import { logs } from './mocks/mockLogs';
 import {dailyForecast, hourlyForecast} from './mocks/mockWeather';
-interface CallServiceArgs<T extends SnakeOrCamelDomains, M extends DomainService<T>> {
-  domain: T;
-  service: M;
-  serviceData?: ServiceData<T, M>;
-  target?: Target;
-}
-
 interface HassProviderProps {
-  children: (ready: boolean) => React.ReactNode;
+  children: (ready: boolean) => ReactNode;
   hassUrl: string;
   throttle?: number;
 }
 
-const fakeConfig = {
+let fakeConfig: HassConfig = {
   "latitude": -33.25779010313883,
   "longitude": 151.4821529388428,
   "elevation": 0,
@@ -58,7 +53,7 @@ const fakeConfig = {
       "volume": "L",
       "wind_speed": "m/s"
   },
-  "location_name": "Freesia",
+  "location_name": "Fake Home",
   "time_zone": "Australia/Brisbane",
   "components": [],
   "config_dir": "/config",
@@ -75,7 +70,7 @@ const fakeConfig = {
   "currency": "AUD",
   "country": "AU",
   "language": "en"
-} satisfies HassConfig;
+};
 
 const fakeAuth = {
   data: {
@@ -107,7 +102,7 @@ class MockWebSocket {
 let renderTemplatePrevious = 'on';
 
 class MockConnection extends Connection {
-  private _mockListeners: { [event: string]: ((data: any) => void)[] };
+  private _mockListeners: { [event: string]: ((data: unknown) => void)[] };
   private _mockResponses: {
     [type: string]: object | ((message: object) => object) | undefined
   };
@@ -132,12 +127,13 @@ class MockConnection extends Connection {
     if (!(eventType in this._mockListeners)) {
       this._mockListeners[eventType] = [];
     }
-    this._mockListeners[eventType].push(eventCallback);
+
+    this._mockListeners[eventType].push(eventCallback as (ev: unknown) => void);
     return () => Promise.resolve();
   }
 
   mockEvent(event: string, data: object) {
-    this._mockListeners[event].forEach((cb) => cb(data));
+    (this._mockListeners[event] ?? []).forEach((cb) => cb(data));
   }
 
   mockResponse(type: string, data: object) {
@@ -192,6 +188,9 @@ class MockConnection extends Connection {
     return () => Promise.resolve();
   }
   async sendMessagePromise<Result>(message: MessageBase): Promise<Result> {
+    if (message.type === 'get_config') {
+      return fakeConfig as Result;
+    }
     // a mock for the proxy image for the camera
     if (message.path && message.path.includes('camera_proxy')) {
       return {
@@ -223,6 +222,14 @@ const ignoreForDiffCheck = (
 };
 
 const useStore = create<Store>((set) => ({
+  disconnectCallbacks: [],
+  onDisconnect: (cb) => set((state) => ({ disconnectCallbacks: [...state.disconnectCallbacks, cb] })),
+  triggerOnDisconnect: () => {
+    set((state) => {
+      state.disconnectCallbacks.forEach((callback) => callback());
+      return { disconnectCallbacks: [] };
+    });
+  },
   routes: [],
   setRoutes: (routes) => set(() => ({ routes })),
   hash: '',
@@ -280,30 +287,35 @@ const useStore = create<Store>((set) => ({
   auth: fakeAuth,
   setAuth: (auth) => set({ auth }),
   config: fakeConfig,
-  setConfig: (config) => set({ config }),
+  user: {
+    id: '',
+    is_admin: false,
+    is_owner: false,
+    name: 'Joe Bloggs',
+  },
+  setUser: (user) => set({ user }),
+  setConfig: (config) => {
+    set((state) => {
+      if (state.connection && 'mockEvent' in state.connection && config) {
+        fakeConfig = config;
+        // @ts-expect-error - don't know domain
+        state.connection.mockEvent('core_config_updated', config);
+      }
+      state.config = config;
+      return state;
+    });
+  },
   error: null,
   setError: (error) => set({ error }),
   hassUrl: '',
   setHassUrl: (hassUrl) => set({ hassUrl }),
   portalRoot: undefined,
   setPortalRoot: (portalRoot) => set({ portalRoot }),
-  callApi: async () => {
+  windowContext: window,
+  setWindowContext: (windowContext) => set({ windowContext }),
+  callApi: async (): Promise<unknown> => {
     return {};
   },
-  /** getter for breakpoints, if using @hakit/components, the breakpoints are stored here to retrieve in different locations */
-  breakpoints: {
-    xxs: 0,
-    xs: 0,
-    sm: 0,
-    md: 0,
-    lg: 0,
-    xlg: 0,
-  },
-  /** setter for breakpoints, if using @hakit/components, the breakpoints are stored here to retrieve in different locations */
-  setBreakpoints: (breakpoints) => set({ breakpoints: {
-    ...breakpoints,
-    xlg: breakpoints.lg + 1,
-  } }),
   globalComponentStyles: {},
   setGlobalComponentStyles: (globalComponentStyles) => set({ globalComponentStyles }),
 }))
@@ -322,6 +334,7 @@ function HassProvider({
   const ready = useStore(store => store.ready);
   const setReady = useStore(store => store.setReady);
   const setLocales = useStore(store => store.setLocales);
+  const setConfig = useStore(store => store.setConfig);
   const clock = useRef<NodeJS.Timeout | null>(null);
   const getStates = async () => null;
   const getServices = async () => null;
@@ -330,13 +343,10 @@ function HassProvider({
   const getAllEntities = useMemo(() => () => entities, [entities]);
 
   const callService = useCallback(
-    async <T extends SnakeOrCamelDomains, M extends DomainService<T>>({
-      service,
-      domain,
-      target,
-      serviceData
-    }: CallServiceArgs<T, M>) => {
-      if (typeof target !== 'string' && !isArray(target)) return;
+    async <ResponseType extends object, T extends SnakeOrCamelDomains, M extends DomainService<T>, R extends boolean>(
+      { domain, service, serviceData, target }: CallServiceArgs<T, M, R>,
+    ): Promise<R extends true ? ServiceResponse<ResponseType> : void> => {
+      if (typeof target !== 'string' && !isArray(target)) return undefined as R extends true ? never : void;
       const now = new Date().toISOString();
       if (domain in fakeApi) {
         const api = fakeApi[domain as 'scene'] as (params: ServiceArgs<'scene'>) => boolean;
@@ -351,21 +361,21 @@ function HassProvider({
           // @ts-expect-error - don't know domain
           serviceData,
         });
-        if (!skip) return;
+        if (!skip) return undefined as R extends true ? never : void;
       }
-      if (typeof target !== 'string') return;
+      if (typeof target !== 'string') return undefined as R extends true ? never : void;
       const dates = {
         last_changed: now,
         last_updated: now,
       }
       switch(service) {
         case 'turn_on':
-        case 'turnOn':
+        case 'turnOn': {
           const attributes = {
             ...entities[target].attributes,
             ...serviceData || {},
           }
-          return setEntities({
+          setEntities({
             ...entities,
             [target]: {
               ...entities[target],
@@ -376,9 +386,11 @@ function HassProvider({
               state: 'on'
             }
           })
+        }
+        break;
         case 'turn_off':
         case 'turnOff':
-          return setEntities({
+          setEntities({
             ...entities,
             [target]: {
               ...entities[target],
@@ -389,9 +401,10 @@ function HassProvider({
               ...dates,
               state: 'off'
             }
-          })
+          });
+        break;
         case 'toggle':
-          return setEntities({
+          setEntities({
             ...entities,
             [target]: {
               ...entities[target],
@@ -404,18 +417,22 @@ function HassProvider({
               state: entities[target].state === 'on' ? 'off' : 'on'
             }
           });
+        break;
         default:
-          return setEntities({
+          setEntities({
             ...entities,
             [target]: {
               ...entities[target],
               ...dates,
             }
           });
+        break;
       }
+      return undefined as R extends true ? never : void;
     },
     [entities, setEntities]
   );
+
 
   useEffect(() => {
     if (clock.current) clearInterval(clock.current);
@@ -426,18 +443,21 @@ function HassProvider({
         last_changed: now.toISOString(),
         last_updated: now.toISOString(),
       }
-      setEntities({
-        ['sensor.time']: {
-          ...entities['sensor.time'],
-          ...dates,
-          state: formatted
-        }
-      });
-    }, 60000);
+      if (formatted !== entities['sensor.time'].state) {
+        setEntities({
+          ...entities,
+          'sensor.time': {
+            ...entities['sensor.time'],
+            ...dates,
+            state: formatted
+          }
+        });
+      }
+    }, 125);
     return () => {
       if (clock.current) clearInterval(clock.current);
     }
-  }, []);
+  }, [entities, setEntities]);
 
   const addRoute = useCallback(
     (route: Omit<Route, "active">) => {
@@ -498,19 +518,34 @@ function HassProvider({
     [routes]
   );
   const callApi = useCallback(
-    async (endpoint: string): Promise<any> => {
-      return await mockCallApi(endpoint);
+    async function <T>(endpoint: string): Promise<{
+      data: T;
+      status: "success";
+    } | {
+      data: string;
+      status: "error";
+    }> {
+      return await mockCallApi(endpoint) as {
+        data: T;
+        status: "success";
+      } | {
+        data: string;
+        status: "error";
+      };
     },
     []
   );
+
 
   useEffect(() => {
     locales.find(locale => locale.code === 'en')?.fetch().then(_locales => {
       setLocales(_locales);
       updateLocales(_locales);
       setReady(true);
+      setConfig(fakeConfig);
+
     });
-  }, []);
+  }, [setLocales, setConfig, setReady]);
 
   return (
     <HassContext.Provider
@@ -524,7 +559,7 @@ function HassProvider({
         getConfig,
         getUser,
         getAllEntities,
-        callService,
+        callService : callService as HassContextProps['callService'],
         callApi,
         joinHassUrl,
       }}
@@ -533,9 +568,6 @@ function HassProvider({
     </HassContext.Provider>
   );
 }
-
-
-import { ReactNode } from "react";
 
 export type HassConnectProps = {
   /** Any react node to render when authenticated */
@@ -549,11 +581,11 @@ export type HassConnectProps = {
 export const HassConnect = ({
   children,
   hassUrl,
-  fallback = null,
+  fallback,
 }: HassConnectProps): ReactNode => {
   return (
     <HassProvider hassUrl={hassUrl}>
-      {(ready) => (ready ? children : fallback)}
+      {(ready) => (ready ? children : (fallback ?? null))}
     </HassProvider>
   );
 };

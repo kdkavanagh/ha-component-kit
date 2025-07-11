@@ -1,12 +1,11 @@
 import { Menu, FabCard, ButtonBar, ButtonBarButton, fallback } from "@components";
 import type { EntityName, FilterByDomain } from "@hakit/core";
-import { useEntity, HvacMode, toReadableString, OFF, localize } from "@hakit/core";
-import { useState, useEffect, useCallback } from "react";
-import { supportsFeatureFromAttributes, UNAVAILABLE } from "@hakit/core";
-import { motion, type MotionProps } from "framer-motion";
+import { useEntity, useHass, HvacMode, toReadableString, OFF, localize, supportsFeatureFromAttributes, UNAVAILABLE } from "@hakit/core";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import styled from "@emotion/styled";
 import { ErrorBoundary } from "react-error-boundary";
 import { css } from "@emotion/react";
+import type { HassConfig } from "home-assistant-js-websocket";
 import {
   ClimateEntityFeature,
   ClimateBuiltInPresetMode,
@@ -17,13 +16,14 @@ import {
   computePresetModeIcon,
   computeSwingModeIcon,
   ClimateBuiltInFanMode,
+  UNIT_F,
 } from "./data";
 import { ClimateControlSlider } from "./ClimateControlSlider";
 import { ClimateHumiditySlider } from "./ClimateHumiditySlider";
 
 type MainControl = "temperature" | "humidity";
 
-const Wrapper = styled(motion.div)`
+const Wrapper = styled.div`
   color: var(--ha-500-contrast);
   width: 100%;
   .controls {
@@ -41,9 +41,7 @@ const Wrapper = styled(motion.div)`
   }
 `;
 
-type Extendable = Omit<MotionProps & React.ComponentPropsWithoutRef<"div">, "title">;
-
-export interface ClimateControlsProps extends Extendable {
+export interface ClimateControlsProps extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
   /** the name of your climate entity */
   entity: FilterByDomain<EntityName, "climate">;
   /** provide a list of hvacModes you want to support/display in the UI, will use all by default */
@@ -64,9 +62,11 @@ export interface ClimateControlsProps extends Extendable {
   entityStateChanged?: (state: string) => void;
   /** the control mode */
   mainControl?: MainControl;
+  /** The custom step increment for the climate entity, this is automatically retrieved from the entity */
+  targetTempStep?: number;
 }
 
-function _ClimateControls({
+function InternalClimateControls({
   entity: _entity,
   hvacModes,
   hvacModeLabels,
@@ -78,6 +78,7 @@ function _ClimateControls({
   entityStateChanged,
   cssStyles,
   className,
+  targetTempStep,
   mainControl = "temperature",
   ...rest
 }: ClimateControlsProps) {
@@ -89,6 +90,8 @@ function _ClimateControls({
   const preset_modes = entity.attributes.preset_modes as ClimateBuiltInPresetMode[] | undefined;
   const swing_modes = entity.attributes.swing_modes as ClimateBuiltInSwingMode[] | undefined;
   const modes = hvacModes ?? entity.attributes.hvac_modes;
+  const [config, setConfig] = useState<HassConfig | null>(null);
+  const { getConfig } = useHass();
 
   const supportTargetHumidity = supportsFeatureFromAttributes(entity.attributes, ClimateEntityFeature.TARGET_HUMIDITY);
   const supportFanMode = supportsFeatureFromAttributes(entity.attributes, ClimateEntityFeature.FAN_MODE);
@@ -104,13 +107,25 @@ function _ClimateControls({
   }, [hvac_action, entityStateChanged, isOff]);
 
   useEffect(() => {
+    getConfig().then(setConfig);
+  }, [getConfig]);
+
+  useEffect(() => {
     setMainControl(mainControl);
   }, [mainControl]);
+
+  const { target_temp_step } = entity.attributes;
+
+  const _step = useMemo(() => {
+    return targetTempStep ?? target_temp_step ?? (config?.unit_system.temperature === UNIT_F ? 1 : 0.5);
+  }, [config?.unit_system.temperature, targetTempStep, target_temp_step]);
 
   const _handleFanModeChanged = useCallback(
     (value: ClimateBuiltInFanMode) => {
       entity.service.setFanMode({
-        fan_mode: value,
+        serviceData: {
+          fan_mode: value,
+        },
       });
     },
     [entity.service],
@@ -119,7 +134,9 @@ function _ClimateControls({
   const _handleOperationModeChanged = useCallback(
     (value: HvacMode) => {
       entity.service.setHvacMode({
-        hvac_mode: value,
+        serviceData: {
+          hvac_mode: value,
+        },
       });
     },
     [entity.service],
@@ -128,7 +145,9 @@ function _ClimateControls({
   const _handleSwingmodeChanged = useCallback(
     (value: ClimateBuiltInSwingMode) => {
       entity.service.setSwingMode({
-        swing_mode: value,
+        serviceData: {
+          swing_mode: value,
+        },
       });
     },
     [entity.service],
@@ -138,7 +157,9 @@ function _ClimateControls({
     (value: ClimateBuiltInPresetMode) => {
       if (value) {
         entity.service.setPresetMode({
-          preset_mode: value,
+          serviceData: {
+            preset_mode: value,
+          },
         });
       }
     },
@@ -154,8 +175,12 @@ function _ClimateControls({
       `}
     >
       <div className="controls">
-        {_mainControl === "temperature" ? <ClimateControlSlider entity={_entity} showCurrent={!hideCurrentTemperature} /> : null}
-        {_mainControl === "humidity" ? <ClimateHumiditySlider entity={_entity} showCurrent={!hideCurrentTemperature} /> : null}
+        {_mainControl === "temperature" ? (
+          <ClimateControlSlider targetTempStep={_step} entity={_entity} showCurrent={!hideCurrentTemperature} />
+        ) : null}
+        {_mainControl === "humidity" ? (
+          <ClimateHumiditySlider targetTempStep={_step} entity={_entity} showCurrent={!hideCurrentTemperature} />
+        ) : null}
         {supportTargetHumidity ? (
           <ButtonBar
             cssStyles={`
@@ -276,7 +301,7 @@ function _ClimateControls({
 export function ClimateControls(props: ClimateControlsProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "ClimateControls" })}>
-      <_ClimateControls {...props} />
+      <InternalClimateControls {...props} />
     </ErrorBoundary>
   );
 }

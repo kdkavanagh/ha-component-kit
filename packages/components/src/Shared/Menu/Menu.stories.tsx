@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, Menu, Row, FabCard } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, Menu, Row, FabCard, ThemeControlsModal } from "@components";
 import type { MenuProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 import { useState } from "react";
@@ -8,7 +8,8 @@ function Template(args?: Partial<MenuProps>) {
   const [value, setValue] = useState("high");
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row
         gap={"1rem"}
         fullWidth
@@ -74,7 +75,7 @@ function Template(args?: Partial<MenuProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Shared/Menu",
+  title: "components/Shared/Menu",
   component: Menu,
   tags: ["autodocs"],
   parameters: {
@@ -82,7 +83,7 @@ export default {
   },
 } satisfies Meta<typeof Menu>;
 export type TimeStory = StoryObj<typeof Menu>;
-export const MenuExample: TimeStory = {
+export const Docs: TimeStory = {
   render: Template,
   args: {},
 };

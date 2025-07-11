@@ -1,8 +1,8 @@
-import { Story, Source, Title, Description } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 export default {
-  title: "HOOKS/useAreas",
+  title: "core/hooks/useAreas",
   tags: ["autodocs"],
   parameters: {
     centered: true,
@@ -17,7 +17,7 @@ export default {
           <Description />
           <p>The following is the use of the hook:</p>
           <Source dark code={`const areas = useAreas();`} />
-          <p>Here's how you could use the hook to render multiple AreaCards</p>
+          <p>Here&apos;s how you could use the hook to render multiple AreaCards</p>
           <Source
             dark
             code={`

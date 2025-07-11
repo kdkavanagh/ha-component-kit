@@ -42,7 +42,7 @@ export function useWeather(entityId: FilterByDomain<EntityName, "weather">, opti
     [connection],
   );
 
-  const debounceSubscribeLogbookPeriod = useDebouncedCallback(
+  const debounceSubscribeWeatherEvents = useDebouncedCallback(
     async (entityId: FilterByDomain<EntityName, "weather">, type: ModernForecastType) => {
       if (_unsubscribe.current) {
         const unsubscribe = await _unsubscribe.current;
@@ -53,10 +53,14 @@ export function useWeather(entityId: FilterByDomain<EntityName, "weather">, opti
       _unsubscribe.current = await subscribeWeatherEvents(entityId, type);
     },
     100,
+    {
+      trailing: true,
+      leading: true,
+    },
   );
 
   useEffect(() => {
-    debounceSubscribeLogbookPeriod(entityId, type);
+    debounceSubscribeWeatherEvents(entityId, type);
 
     return () => {
       _subscribed.current = false;
@@ -64,7 +68,7 @@ export function useWeather(entityId: FilterByDomain<EntityName, "weather">, opti
         _unsubscribe.current();
       }
     };
-  }, [type, debounceSubscribeLogbookPeriod, subscribeWeatherEvents, entityId]);
+  }, [type, debounceSubscribeWeatherEvents, subscribeWeatherEvents, entityId]);
 
   if (error) {
     throw error;

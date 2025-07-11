@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, PictureCard } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, PictureCard, ThemeControlsModal } from "@components";
 import type { PictureCardProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 import office from "./office.jpg";
@@ -7,14 +7,15 @@ import office from "./office.jpg";
 function Template(args: PictureCardProps) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <PictureCard {...args} />
     </HassConnect>
   );
 }
 
 export default {
-  title: "COMPONENTS/Cards/PictureCard",
+  title: "components/Cards/PictureCard",
   component: PictureCard,
   tags: ["autodocs"],
   parameters: {
@@ -26,7 +27,7 @@ export default {
   },
 } satisfies Meta<typeof PictureCard>;
 export type PictureCardStory = StoryObj<typeof PictureCard>;
-export const PictureCardExample: PictureCardStory = {
+export const Docs: PictureCardStory = {
   render: Template,
   args: {
     title: "Office",

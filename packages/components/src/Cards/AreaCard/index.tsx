@@ -6,7 +6,6 @@ import { localize, useHass, type EntityName } from "@hakit/core";
 import { Row, FabCard, fallback, mq, PreloadImage, CardBase } from "@components";
 import type { PictureCardProps, CardBaseProps, AvailableQueries } from "@components";
 import { Icon } from "@iconify/react";
-import { motion, AnimatePresence } from "framer-motion";
 import { useKeyPress } from "react-use";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -16,7 +15,6 @@ type OmitProperties =
   | "title"
   | "entity"
   | "modalProps"
-  | "ref"
   | "entity"
   | "serviceData"
   | "service"
@@ -36,8 +34,6 @@ export interface AreaCardProps extends Extendable {
   hash: string;
   /** The children to render when the area is activated */
   children: React.ReactNode;
-  /** the animation duration of the area expanding @default 0.25 */
-  animationDuration?: number;
   /** called when the card is pressed */
   onClick?: () => void;
   /** disable the click events on the card, useful if you want to disable the area card for certain situations like drag or panning */
@@ -76,7 +72,7 @@ const NavBar = styled(PictureCardFooter)`
   border-bottom: 1px solid var(--ha-S200);
 `;
 
-const FullScreen = styled(motion.div)`
+const FullScreen = styled.div`
   position: fixed;
   inset: 0;
   left: var(--ha-area-card-expanded-offset);
@@ -108,13 +104,12 @@ const ChildContainer = styled.div`
   flex-direction: column;
 `;
 
-function _AreaCard({
+function InternalAreaCard({
   hash,
   children,
   icon,
   title,
   image,
-  animationDuration = 0.25,
   className,
   preloadProps,
   onClick,
@@ -129,6 +124,8 @@ function _AreaCard({
   const { useStore, addRoute, getRoute } = useHass();
   const globalComponentStyle = useStore((state) => state.globalComponentStyles);
   const portalRoot = useStore((store) => store.portalRoot);
+  const windowContext = useStore((store) => store.windowContext);
+  const win = windowContext ?? window;
   const [isPressed] = useKeyPress((event) => event.key === "Escape");
   const [open, setOpen] = useState(false);
   const route = useMemo(() => getRoute(hash), [hash, getRoute]);
@@ -166,58 +163,35 @@ function _AreaCard({
     <>
       {open &&
         createPortal(
-          <AnimatePresence key={`${idRef}-area-card-parent`} mode="wait" initial={false}>
-            {open === true && (
-              <FullScreen
-                key={`fullscreen-layout-${idRef}`}
-                layoutId={idRef}
-                id={`${idRef}-expanded`}
-                className={"full-screen"}
-                initial={{ opacity: 0 }}
-                transition={{
-                  duration: animationDuration,
-                }}
-                exit={{
-                  opacity: 0,
-                  transition: {
-                    delay: animationDuration,
-                  },
-                }}
-                animate={{
-                  opacity: 1,
-                  transition: {
-                    delay: 0,
-                  },
-                }}
-              >
-                <Global
-                  styles={css`
-                    :root {
-                      --ha-hide-body-overflow-y: hidden;
-                    }
-                  `}
-                />
-                <NavBar className={"nav-bar"}>
-                  <Row gap="0.5rem" justifyContent="space-between" className={"row"}>
-                    <Row gap="0.5rem" className={"row"}>
-                      {icon && <Icon className={"icon"} icon={icon} />}
-                      {title}
-                    </Row>
-                    <FabCard
-                      title={localize("close")}
-                      tooltipPlacement="left"
-                      icon="mdi:close"
-                      onClick={() => {
-                        location.hash = "";
-                      }}
-                    />
+          open === true && (
+            <FullScreen key={`fullscreen-layout-${idRef}`} className={"full-screen"}>
+              <Global
+                styles={css`
+                  :root {
+                    --ha-hide-body-overflow-y: hidden;
+                  }
+                `}
+              />
+              <NavBar className={"nav-bar"}>
+                <Row gap="0.5rem" justifyContent="space-between" className={"row"}>
+                  <Row gap="0.5rem" className={"row"}>
+                    {icon && <Icon className={"icon"} icon={icon} />}
+                    {title}
                   </Row>
-                </NavBar>
-                <ChildContainer className={"child-container"}>{children}</ChildContainer>
-              </FullScreen>
-            )}
-          </AnimatePresence>,
-          portalRoot ?? document.body,
+                  <FabCard
+                    title={localize("close")}
+                    tooltipPlacement="left"
+                    icon="mdi:close"
+                    onClick={() => {
+                      location.hash = "";
+                    }}
+                  />
+                </Row>
+              </NavBar>
+              <ChildContainer className={"child-container"}>{children}</ChildContainer>
+            </FullScreen>
+          ),
+          portalRoot ?? win.document.body,
           idRef,
         )}
       <StyledAreaCard
@@ -225,7 +199,6 @@ function _AreaCard({
         disableActiveState
         disableRipples
         id={`${idRef}-area-card`}
-        layoutId={idRef}
         className={`area-card ${className ?? ""}`}
         onClick={() => {
           if (!disable) {
@@ -282,7 +255,7 @@ export function AreaCard(props: AreaCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "AreaCard" })}>
-      <_AreaCard {...defaultColumns} {...props} />
+      <InternalAreaCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

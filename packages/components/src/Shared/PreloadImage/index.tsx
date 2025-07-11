@@ -3,7 +3,6 @@ import styled from "@emotion/styled";
 import { css } from "@emotion/react";
 
 import { Icon } from "@iconify/react";
-import { MotionProps } from "framer-motion";
 
 const Preloader = styled.div`
   position: relative;
@@ -26,9 +25,7 @@ const StyledIcon = styled(Icon)`
   transform: translate(-50%, -50%);
   font-size: 2rem;
 `;
-
-type Extendable = Omit<React.ComponentPropsWithoutRef<"div"> & MotionProps, "onLoad" | "onError">;
-export interface PreloadImageProps extends Extendable {
+export interface PreloadImageProps extends Omit<React.ComponentPropsWithoutRef<"div">, "onLoad" | "onError"> {
   lazy?: boolean;
   src: string;
   style?: React.CSSProperties;
@@ -78,7 +75,9 @@ export const PreloadImage = ({
   const setPreloader = useCallback(() => {
     if (!src) return;
     preloader.current = new Image();
-    onLoading && onLoading();
+    if (typeof onLoading === "function") {
+      onLoading();
+    }
     if (imageDivRef.current) {
       imageDivRef.current.style.opacity = "0";
       imageDivRef.current.style.backgroundImage = `url(${src})`;
@@ -94,7 +93,9 @@ export const PreloadImage = ({
       if (loadingIconRef.current) {
         loadingIconRef.current.style.opacity = "0";
       }
-      onLoad && onLoad();
+      if (typeof onLoad === "function") {
+        onLoad();
+      }
     };
     preloader.current.onerror = () => {
       if (imageDivRef.current) {
@@ -103,7 +104,9 @@ export const PreloadImage = ({
       if (loadingIconRef.current) {
         loadingIconRef.current.style.opacity = "0";
       }
-      onError && onError();
+      if (typeof onError === "function") {
+        onError();
+      }
     };
 
     preloader.current.src = src;

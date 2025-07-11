@@ -1,53 +1,38 @@
-import { Meta, Source } from '@storybook/blocks';
+import { Meta, Source } from '@storybook/addon-docs/blocks';
 
 <Meta title="INTRODUCTION/Deploying" />
 
 ## Deploying to Home Assistant
 
-To setup a project with @hakit, you can use the following command:
+Home Assistant is bundled with a http server, specifically under `config/www` you can provide anything into this section and access via the `/local` pathname, which we can utilize to host our new dashboard, we do need to gather/setup some credentials to get going:
 
-<Source dark code={`
-  npm create hakit@latest
-`} />
+## Prerequisites
 
-This script will completely scaffold your project, produce documentation for the next steps in the README.md file, and a really quick way to get up and going!
+1. Setup project using the [getting started guide](/docs/introduction-getting-started--docs)
+2. SSH Credentials setup - [Instructions](/docs/introduction-deploying-ssh-credentials--docs)
 
-There is some further information required to get the deploy script working, so please read on.
-
-Homeassistant is bundled with a webserver, which we can utilize to host our new dashboard, we do need to gather/setup some credentials to get going:
-
-## Retrieving SSH Credentials
-
-1. In Homeassistant: Install and setup the [Advanced SSH & Web Terminal](https://github.com/hassio-addons/addon-ssh) addon, this is very easy!
-  - Click on your "Profile name" in your HA dashboard
-  - Scroll down and enable "Advanced mode"
-  - Go to Settings -> Addons -> ADD-ON STORE for "SSH & Web Terminal" -> Install
-  - Once installed, Go to the configuration tab, enter a password into the field and save
-  - Change default password
-  - The username has to be set to `root` (default is `hassio`).
-  - The sftp flag has to be set to true (default is false, and true requires the username to be root).
-  - Ensure the PORT is 22, save
-2. Finally, update the .env file that's created with the `create hakit` script, or add it to your project manually:
-
-```bash
-VITE_HA_URL=http://homeassistant.local:8123 # your home assistant hostname or IP address
-VITE_FOLDER_NAME=ha-dashboard # the folder name you want to copy the files to, this should also match the base name in the vite.config.ts `base: '/local/ha-dashboard/'`
-VITE_SSH_USERNAME=root # the default username is root, if you changed this, change this value
-VITE_SSH_PASSWORD=yourpassword # the password you set in the addon
-VITE_SSH_HOSTNAME=yourhostname # your home assistant hostname or IP address, if you get EHOSTUNREACH when connecting, try your IP address `ping homeassistant.local` to get your IP address
-```
-
-The `VITE_HA_TOKEN` instructions can be found [here](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/introduction-typescriptsync--docs) under the pre-requisites section.
-
-You should be able to run `npm run build && npm run deploy` and your dashboard should be available at a link printed in the terminal!
+You should be able to run `npm run build && npm run deploy` and your dashboard should be available, a link will be logged in the terminal.
 
 Now you should be able to access your dashboard (assuming you haven't changed the `VITE_FOLDER_NAME` in the environment variables):
 
 [http://homeassistant.local:8123/local/ha-dashboard/index.html](http://homeassistant.local:8123/local/ha-dashboard/index.html)
 
-or with nabucasa:
+or with Nabucasa:
 
 [https://YOUR_NABU_CASA_ID.ui.nabu.casa/local/ha-dashboard/index.html](https://YOUR_NABU_CASA_ID.ui.nabu.casa/local/ha-dashboard/index.html)
+
+## IMPORTANT
+
+Important Security Considerations for HA_TOKEN Usage with `HassConnect`
+
+The `hassToken` prop provided to `HassConnect` is highly convenient for local development and is required for executing the `npm run sync` command. However, it is strongly discouraged to use this token in production environments or on Home Assistant servers with remote access enabled.
+
+#### Security Risks
+- **Public Exposure**: The Home Assistant `www` directory is not protected by authentication. Any file placed in this directory will be accessible over the internet if someone knows its path, potentially exposing both your dashboard and the HA Token.
+- **Production Build Recommendations**: For production builds, especially when publishing files to the `www` folder, it is recommended to omit the token to prevent unauthorized access.
+- **User Authentication**: When the token is not used, users will be prompted to log in once per machine. This additional step serves as a valuable security measure by ensuring that only authenticated users can access your Home Assistant dashboard.
+
+For optimal security, restrict the use of the HA Token to local development environments only, and always enforce authentication for production deployments.
 
 ## Home Assistant Addon
 

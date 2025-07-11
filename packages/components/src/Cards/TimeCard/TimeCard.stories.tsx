@@ -1,21 +1,21 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, Row, TimeCard, Alert } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, Row, TimeCard, ThemeControlsModal, Alert } from "@components";
 import type { TimeCardProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Template(args?: Partial<TimeCardProps>) {
   return (
     <HassConnect hassUrl="http://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row gap="1rem">
         <TimeCard {...args} />
-        <TimeCard timeFormat="hh:mm:ss a" dateFormat={"MMM DD"} {...args} />
+        <TimeCard timeFormat="hh:mm:ss A" dateFormat={"MMM DD"} {...args} />
         <TimeCard
           timeFormat={(date) => {
-            return "WHAT? " + date.toLocaleTimeString().replace(/:/g, "-");
+            return "Time: " + date.toLocaleTimeString().replace(/:/g, "-");
           }}
           hideDate
-          {...args}
         />
       </Row>
       <Alert
@@ -29,12 +29,12 @@ function Template(args?: Partial<TimeCardProps>) {
           instance.
         </p>
         <p>
-          If you want to use sensors from home assistant you can follow the guide below, the difference being there's no need to perform
-          formatting or updates as updates are emitted from home assistant instead of tracking the time differences with react.
+          If you want to use sensors from home assistant you can follow the guide below, the difference being there&apos;s no need to
+          perform formatting or updates as updates are emitted from home assistant instead of tracking the time differences with react.
         </p>
         <p>
           To add custom entities, you can follow the guide{" "}
-          <a href="https://www.home-assistant.io/integrations/time_date/" target="_blank">
+          <a href="https://www.home-assistant.io/integrations/time_date/" target="_blank" rel="noreferrer">
             here
           </a>
           .
@@ -54,7 +54,7 @@ function WithoutDate(args?: Partial<TimeCardProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/TimeCard",
+  title: "components/Cards/TimeCard",
   component: TimeCard,
   tags: ["autodocs"],
   parameters: {
@@ -62,9 +62,18 @@ export default {
   },
 } satisfies Meta<typeof TimeCard>;
 export type TimeStory = StoryObj<typeof TimeCard>;
-export const TimeExample: TimeStory = {
+export const Docs: TimeStory = {
   render: Template,
   args: {},
+  parameters: {
+    docs: {
+      source: {
+        // language: 'graphql',
+        dark: false,
+        excludeDecorators: false,
+      },
+    },
+  },
 };
 
 export const WithoutDateExample: TimeStory = {

@@ -1,14 +1,12 @@
-import { useState } from "react";
-import type { Meta, StoryObj } from "@storybook/react";
-import { Source } from "@storybook/blocks";
-import { ThemeProvider, theme, Group, Alert } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Source } from "@storybook/addon-docs/blocks";
+import { ThemeProvider, theme, Alert, ThemeControlsModal, useThemeStore } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 import { merge } from "lodash";
 import { convertToCssVars } from "./helpers";
 import type { ThemeProviderProps } from "@components";
 import jsxToString from "react-element-to-jsx-string";
-import { ThemeControls, ThemeControlsProps } from "./ThemeControls";
-import { DEFAULT_THEME_OPTIONS } from "./constants";
+import { redirectToStory } from "../../../../.storybook/redirect";
 
 const customTheme: ThemeProviderProps<{
   anything: {
@@ -33,29 +31,13 @@ function CustomThemeProvider() {
 }
 
 function Render(args: Story["args"]) {
-  const theme = args?.theme || {};
-  const [customTheme, setCustomTheme] = useState<Omit<ThemeControlsProps, "onChange">>({
-    darkMode: DEFAULT_THEME_OPTIONS.darkMode,
-    tint: DEFAULT_THEME_OPTIONS.tint,
-    hue: DEFAULT_THEME_OPTIONS.hue,
-    saturation: DEFAULT_THEME_OPTIONS.saturation,
-    lightness: DEFAULT_THEME_OPTIONS.lightness,
-    contrastThreshold: DEFAULT_THEME_OPTIONS.contrastThreshold,
-  });
+  const theme = useThemeStore((store) => store.theme);
   return (
     <HassConnect hassUrl="http://localhost:8123" {...args}>
       <h2>Theme Provider</h2>
       <p>
         A simple way of creating global styles and providing re-usable css variables to re-use across your custom home assistant dashboard.
       </p>
-      <Group title="Dynamic Theme Controls" collapsed>
-        <ThemeControls
-          {...customTheme}
-          onChange={(_theme) => {
-            setCustomTheme(_theme);
-          }}
-        />
-      </Group>
       <Alert
         type="info"
         title="NOTE"
@@ -63,26 +45,27 @@ function Render(args: Story["args"]) {
           marginTop: "1rem",
         }}
       >
-        The dynamic theme controls above will update the code below so you can copy/paste your desired theme.
+        You can use the theme controls in the top right corner to show how the values are used below
       </Alert>
       <Source
         dark
         code={`
 <ThemeProvider
-  hue={${customTheme.hue}}
-  lightness={${customTheme.lightness}}
-  saturation={${customTheme.saturation}}
-  darkMode={${customTheme.darkMode}}
-  contrastThreshold={${customTheme.contrastThreshold}}
-  tint={${customTheme.tint}}
+  hue={${theme.hue}}
+  lightness={${theme.lightness}}
+  saturation={${theme.saturation}}
+  darkMode={${theme.darkMode}}
+  contrastThreshold={${theme.contrastThreshold}}
+  tint={${theme.tint}}
 />
         `}
         language="tsx"
       />
-      <ThemeProvider {...customTheme} theme={args?.theme} />
+      <ThemeProvider {...theme} theme={args?.theme} />
+      <ThemeControlsModal />
       <h2>Global styles</h2>
       <p>
-        We can also update styles globall for most components, meaning themeing becomes quite easy to manage, a simple way of defining
+        We can also update styles globally for most components, meaning theming becomes quite easy to manage, a simple way of defining
         global styles and have them apply to your whole application is by utilizing the globalStyles prop
       </p>
       <Source
@@ -123,8 +106,8 @@ function Render(args: Story["args"]) {
       <p>Available CSS Variables:</p>
       <Source dark code={`${convertToCssVars(theme).replace(/^\s+/gm, "")}`} language="tsx" />
       <p>
-        The ThemeProvider can be used as is with no props and you'll have access to all available css variables defined under the importable
-        type `ThemeParams` from `@hakit/components`;
+        The ThemeProvider can be used as is with no props and you&apos;ll have access to all available css variables defined under the
+        importable type `ThemeParams` from `@hakit/components`;
       </p>
       <p>
         The css variables take the input theme object (which is of type `ThemeParams`) and converts the keys & nested keys to kebab case to
@@ -138,8 +121,9 @@ function Render(args: Story["args"]) {
         and your custom properties / overrides:
       </p>
       <p>
-        <b>Note: </b>Strings are converted to raw values so if you're expecting a "string" as the css value make sure you wrap in double
-        quotes `'"Arial"'`, additionally, any camelCase strings will be converted to kebab case for the css variables
+        <b>Note: </b>Strings are converted to raw values so if you&apos;re expecting a &quot;string&quot; as the css value make sure you
+        wrap in double quotes `&apos;&quot;Arial&quot;`, additionally, any camelCase strings will be converted to kebab case for the css
+        variables
       </p>
 
       <Source dark code={convertToCssVars(merge(theme, customTheme) as object).replace(/^\s+/gm, "")} />
@@ -154,6 +138,20 @@ function Render(args: Story["args"]) {
     \tbackground-color: var(--ha-font-family);
     }`.replace(/^[ ]+/gm, "")}
       />
+      <h3>Breakpoints</h3>
+      <p>
+        You can also customize the breakpoints used for your dashboard if you wish and the defaults aren&quot;t working for you, see more{" "}
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            redirectToStory("/docs/introduction-responsive-layouts-breakpoints--docs");
+          }}
+        >
+          here
+        </a>
+        .
+      </p>
     </HassConnect>
   );
 }
@@ -164,12 +162,29 @@ export default {
   tags: ["autodocs"],
   parameters: {
     padding: "2rem",
+    docs: {
+      canvas: {
+        sourceState: "none",
+      },
+    },
   },
 } satisfies Meta<typeof ThemeProvider>;
 export type Story = StoryObj<typeof ThemeProvider>;
-export const Example: Story = {
+export const Docs: Story = {
   render: Render,
   args: {
     theme,
   },
 };
+
+const Empty = () => <></>;
+
+export type CustomBreakpoints = StoryObj<typeof Empty>;
+export const CustomBreakpoints: Story = {
+  render: Empty,
+  parameters: {
+    redirectTo: "/story/components-hooks-usebreakpoint--custom-breakpoints",
+  },
+};
+
+CustomBreakpoints.storyName = "Custom Breakpoints";

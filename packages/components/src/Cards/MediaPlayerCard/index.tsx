@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useMemo, useState, useId } from "react";
+import { useEffect, useRef, useCallback, useMemo, useState } from "react";
 import { useService, useHass, isUnavailableState, useEntity, OFF, supportsFeatureFromAttributes } from "@hakit/core";
 import { snakeCase, clamp } from "lodash";
 import { useGesture } from "@use-gesture/react";
@@ -96,7 +96,6 @@ type OmitProperties =
   | "title"
   | "as"
   | "layout"
-  | "ref"
   | "entity"
   | "disabled"
   | "active"
@@ -137,7 +136,7 @@ export interface MediaPlayerCardProps extends Omit<CardBaseProps<"div", FilterBy
   /** show the artwork as the background of the card @default true */
   showArtworkBackground?: boolean;
 }
-function _MediaPlayerCard({
+function InternalMediaPlayerCard({
   entity: _entity,
   groupMembers = [],
   volumeLayout = "slider",
@@ -198,7 +197,6 @@ function _MediaPlayerCard({
   const disabled = isUnavailable || _disabled;
   const seekDisabled = isIdle || isOff || isStandby || buffering || disabled;
   const [isGroupingModalOpen, setIsGroupingModalOpen] = useState(false);
-  const groupingLayoutId = useId();
 
   const updateClock = useCallback(
     (x: number) => {
@@ -266,8 +264,11 @@ function _MediaPlayerCard({
       const offsetX = x - rect.left;
       // Translate the click position into a percentage between 0-100
       const percentage = offsetX / rect.width;
-      mp.mediaSeek(allEntityIds, {
-        seek_position: percentage * (media_duration ?? 0),
+      mp.mediaSeek({
+        target: allEntityIds,
+        serviceData: {
+          seek_position: percentage * (media_duration ?? 0),
+        },
       });
     },
     [mp, allEntityIds, media_duration],
@@ -277,9 +278,16 @@ function _MediaPlayerCard({
     calculatePercentageViewed(media_duration, media_position);
   }, [media_position, calculatePercentageViewed, media_duration]);
 
-  const debounceUpdateClock = useThrottledCallback((value: number) => {
-    updateClock(value);
-  }, 20);
+  const debounceUpdateClock = useThrottledCallback(
+    (value: number) => {
+      updateClock(value);
+    },
+    20,
+    {
+      trailing: true,
+      leading: true,
+    },
+  );
 
   // noinspection JSVoidFunctionReturnValueUsed
   const bindProgress = useGesture({
@@ -368,7 +376,6 @@ function _MediaPlayerCard({
                       entity={_entity}
                       disabled={disabled}
                       onSpeakerGroupClick={() => setIsGroupingModalOpen(true)}
-                      layoutId={groupingLayoutId}
                       hideGrouping={hideGrouping}
                     />
                   )}
@@ -411,7 +418,6 @@ function _MediaPlayerCard({
                     entity={_entity}
                     disabled={disabled}
                     onSpeakerGroupClick={() => setIsGroupingModalOpen(true)}
-                    layoutId={groupingLayoutId}
                     hideGrouping={hideGrouping}
                   />
                 )}
@@ -454,7 +460,7 @@ export function MediaPlayerCard(props: MediaPlayerCardProps) {
 
   return (
     <ErrorBoundary {...fallback({ prefix: "MediaPlayerCard" })}>
-      <_MediaPlayerCard {...defaultColumns} {...props} />
+      <InternalMediaPlayerCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

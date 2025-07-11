@@ -1,7 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Global, css } from "@emotion/react";
-import { ThemeProvider, SidebarCard, ButtonCard, Row, AreaCard, Group, Column, TriggerCard } from "@components";
-import { Source } from "@storybook/blocks";
+import { ThemeProvider, SidebarCard, ButtonCard, Row, AreaCard, Group, Column, TriggerCard, ThemeControlsModal } from "@components";
+import { Source } from "@storybook/addon-docs/blocks";
 import { useEntity } from "@hakit/core";
 import type { SidebarCardProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
@@ -27,7 +27,8 @@ const MakeFullScreen = () => {
 function Template(args?: Partial<SidebarCardProps>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <MakeFullScreen />
       <Row alignItems="stretch" justifyContent="flex-start" fullWidth fullHeight wrap="nowrap">
         <SidebarCard startOpen={false} {...args}>
@@ -83,8 +84,10 @@ function SidebarMenuItems(args?: Partial<SidebarCardProps>) {
                   onClick={(event) => {
                     event.stopPropagation();
                     ac.service.setTemperature({
-                      hvac_mode: "cool",
-                      temperature: ac.attributes.temperature + 1,
+                      serviceData: {
+                        hvac_mode: "cool",
+                        temperature: ac.attributes.temperature + 1,
+                      },
                     });
                   }}
                 />
@@ -93,8 +96,10 @@ function SidebarMenuItems(args?: Partial<SidebarCardProps>) {
                   onClick={(event) => {
                     event.stopPropagation();
                     ac.service.setTemperature({
-                      hvac_mode: "cool",
-                      temperature: ac.attributes.temperature - 1,
+                      serviceData: {
+                        hvac_mode: "cool",
+                        temperature: ac.attributes.temperature - 1,
+                      },
                     });
                   }}
                 />
@@ -177,7 +182,8 @@ function Replica() {
 function TemplateMenuItems(args?: Partial<SidebarCardProps>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <MakeFullScreen />
       <Row alignItems="stretch" justifyContent="flex-start" fullWidth fullHeight wrap="nowrap">
         <SidebarMenuItems {...args} />
@@ -187,8 +193,8 @@ function TemplateMenuItems(args?: Partial<SidebarCardProps>) {
               maxWidth: 600,
             }}
           >
-            This is just an example of the level of customization achievable, this isn't fully implemented as you will see when you collapse
-            this sidebar!
+            This is just an example of the level of customization achievable, this isn&apos;t fully implemented as you will see when you
+            collapse this sidebar!
           </p>
           <Source dark code={Replica()} />
         </Row>
@@ -201,7 +207,6 @@ function TemplateCustomWidth(args?: Partial<SidebarCardProps>) {
   return (
     <HassConnect hassUrl="http://localhost:8123">
       <ThemeProvider
-        includeThemeControls
         theme={{
           device: {
             sidebarCard: {
@@ -212,6 +217,7 @@ function TemplateCustomWidth(args?: Partial<SidebarCardProps>) {
           },
         }}
       />
+      <ThemeControlsModal />
       <MakeFullScreen />
       <Row alignItems="stretch" justifyContent="flex-start" fullWidth fullHeight wrap="nowrap">
         <SidebarCard startOpen={true} {...args}>
@@ -228,7 +234,7 @@ function TemplateCustomWidth(args?: Partial<SidebarCardProps>) {
           </p>
           <Source
             dark
-            code={`<ThemeProvider includeThemeControls theme={{
+            code={`<ThemeProvider theme={{
         device: {
           sidebarCard: {
             width: {
@@ -245,7 +251,7 @@ function TemplateCustomWidth(args?: Partial<SidebarCardProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/SidebarCard",
+  title: "components/Cards/SidebarCard",
   component: SidebarCard,
   tags: ["autodocs"],
   parameters: {

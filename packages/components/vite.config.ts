@@ -7,7 +7,7 @@ import dts from 'vite-plugin-dts';
 import svgr from "vite-plugin-svgr";
 import { fileURLToPath } from 'node:url';
 import { extname, relative, resolve } from 'path'
-import { glob } from 'glob'
+import { glob } from 'glob';
 
 const globals = {
   react: 'React',
@@ -17,7 +17,6 @@ const globals = {
   'lodash': 'lodash',
   'react-is': 'react-is',
   '@iconify/react': '@iconify/react',
-  'framer-motion': 'framer-motion',
   'react-use': 'react-use',
   '@emotion/styled': '@emotion/styled',
   '@emotion/react': '@emotion/react',
@@ -64,7 +63,7 @@ export default defineConfig(configEnv => {
     }),
     svgr(),
     linterPlugin({
-      include: ['./src}/**/*.{ts,tsx}'],
+      include: ['./src/**/*.{ts,tsx}'],
       linters: [new EsLinter({ configEnv })],
     }),
   ] satisfies UserConfig['plugins'];
@@ -74,7 +73,7 @@ export default defineConfig(configEnv => {
       root: resolve(__dirname, './'),
       outDir: resolve(__dirname, './dist/types'),
       include: [resolve(__dirname, './src')],
-      exclude: ['node_modules/**', 'framer-motion'],
+      exclude: ['node_modules/**'],
       clearPureImport: true,
       copyDtsFiles: true,
       insertTypesEntry: true,
@@ -95,18 +94,16 @@ ${content}`
       },
     })
   ] satisfies PluginOption[];
-  if (configEnv.mode === 'production') {
-    plugins.push(...productionPlugins);
-  }
   let input = undefined;
   if (configEnv.mode === 'production') {
+    plugins.push(...productionPlugins);
     input = Object.fromEntries(
       glob.sync([
         'src/*.{ts,tsx}',
         'src/**/*.{ts,tsx}',
         'src/**/**/*.{ts,tsx}',
       ], {
-        ignore: ['**/*stories.ts', '**/*stories.tsx', "**/*.test.{ts,tsx}"]
+        ignore: ['**/*stories.ts', '**/*stories.tsx', "**/*.test.{ts,tsx}", "**/*.code.{ts,tsx}"]
       }).map(file => [
          // The name of the entry point
          // src/nested/foo.ts becomes nested/foo

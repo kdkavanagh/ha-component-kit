@@ -1,8 +1,8 @@
-import { Story, Source, Title, Description, ArgTypes } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
+import { Story, Source, Title, Description, ArgTypes } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 export default {
-  title: "HOOKS/useCamera",
+  title: "core/hooks/useCamera",
   tags: ["autodocs"],
   parameters: {
     centered: true,
@@ -17,7 +17,7 @@ export default {
           <Description />
           <p>The following is the use of the hook:</p>
           <Source dark code={`const camera = useCamera('camera.some_camera');`} />
-          <p>Here's how you could use the hook to render the poster in an image:</p>
+          <p>Here&apos;s how you could use the hook to render the poster in an image:</p>
           <Source
             dark
             code={`
@@ -35,7 +35,7 @@ function RenderCamera() {
           <h3>Motion JPEG</h3>
           <p>
             If supported, the motion jpeg by default is the same size that the camera is setup to record with, if you wish to change this so
-            it's a smaller image, you can do this through yaml in your configuration.yaml
+            it&apos;s a smaller image, you can do this through yaml in your configuration.yaml
           </p>
           <Source
             dark

@@ -1,36 +1,15 @@
-import { Story, Source, Title, Description, ArgTypes } from "@storybook/blocks";
-import type { Meta, StoryObj } from "@storybook/react";
-import { useLowDevices } from "@hakit/core";
-import type { EntityName } from "@hakit/core";
-import { EntitiesCard, EntitiesCardRow, ThemeProvider, Row, Column } from "@components";
+import { Story, Source, Title, Description, ArgTypes } from "@storybook/addon-docs/blocks";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, Row, Column, ThemeControlsModal } from "@components";
 import { HassConnect } from "@hass-connect-fake";
-
-function RenderDevices() {
-  const devices = useLowDevices();
-  return (
-    <EntitiesCard includeLastUpdated>
-      {devices.map((device) => (
-        <EntitiesCardRow
-          key={device.entity_id}
-          entity={device.entity_id as EntityName}
-          renderState={(entity) => {
-            return (
-              <div>
-                {entity.state}
-                {entity.attributes.unit_of_measurement}
-              </div>
-            );
-          }}
-        />
-      ))}
-    </EntitiesCard>
-  );
-}
+import basicExample from "./examples/basic.code?raw";
+import { RenderDevices } from "./examples/basic.code";
 
 function Template() {
   return (
     <HassConnect hassUrl="http://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column fullWidth gap="1rem">
         <p>The following renders the low battery devices in an EntitiesCard component</p>
         <Row gap="1rem" fullWidth>
@@ -42,7 +21,7 @@ function Template() {
 }
 
 export default {
-  title: "HOOKS/useLowDevices",
+  title: "core/hooks/useLowDevices",
   component: Template,
   tags: ["autodocs"],
   parameters: {
@@ -56,33 +35,12 @@ export default {
             <mark>{`useLowDevices({ min = 0, max = 20, blacklist = [], whitelist = [] })`}</mark>
           </h5>
           <Description />
-          <p>The following is the use of the hook in it's default form:</p>
+          <p>The following is the use of the hook in it&apos;s default form:</p>
           <Source dark code={`const lowDevices = useLowDevices();`} />
           <ArgTypes />
           <Template />
-          <p>Here's the source code for the above EntitiesCard:</p>
-          <Source
-            dark
-            code={`
-function RenderDevices() {
-  const devices = useLowDevices();
-  return (
-    <EntitiesCard
-      includeLastUpdated
-    >
-      {devices.map(device => <EntitiesCardRow key={device.entity_id} entity={device.entity_id as EntityName} renderState={(entity) => {
-        return (
-          <div>
-            {entity.state}
-            {entity.attributes.unit_of_measurement}
-          </div>
-        );
-      }} />)}
-    </EntitiesCard>
-  );
-}
-          `}
-          />
+          <p>Here&apos;s the source code for the above EntitiesCard:</p>
+          <Source dark code={basicExample} />
         </>
       ),
       description: {

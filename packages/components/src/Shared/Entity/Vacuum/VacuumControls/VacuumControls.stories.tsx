@@ -1,4 +1,4 @@
-import type { Meta, StoryObj, Args } from "@storybook/react";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
 import { ThemeProvider, VacuumControls, Row } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
@@ -14,7 +14,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Shared/Entity/Vacuum/VacuumControls",
+  title: "components/Shared/Entity/Vacuum/VacuumControls",
   component: VacuumControls,
   tags: ["autodocs"],
   parameters: {
@@ -22,7 +22,7 @@ export default {
   },
 } satisfies Meta<typeof VacuumControls>;
 export type VacuumStory = StoryObj<typeof VacuumControls>;
-export const VacuumControlsExample: VacuumStory = {
+export const Docs: VacuumStory = {
   render: Render,
   args: {
     entity: "vacuum.robot_vacuum",

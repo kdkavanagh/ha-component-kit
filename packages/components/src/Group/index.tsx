@@ -1,8 +1,8 @@
 import { useState } from "react";
 import styled from "@emotion/styled";
 import { Row, Column, fallback, CardBase, CardBaseProps, mq, type AvailableQueries } from "@components";
-import { motion, AnimatePresence } from "framer-motion";
 import { ErrorBoundary } from "react-error-boundary";
+import { AutoHeight } from "../Shared/AutoHeight";
 
 const StyledGroup = styled(CardBase)<{
   collapsed: boolean;
@@ -12,7 +12,10 @@ const StyledGroup = styled(CardBase)<{
   color: var(--ha-S200-contrast);
   padding: ${({ collapsed }) => (collapsed ? "0 2rem" : "0 2rem 2rem")};
   transition: var(--ha-transition-duration) var(--ha-easing);
-  transition-property: padding, background-color;
+  transition-property: height, padding, background-color;
+  &.expanded {
+    height: calc-size(auto);
+  }
   width: 100%;
   > div.contents > .header-title {
     cursor: pointer;
@@ -52,7 +55,9 @@ const Description = styled.span`
   padding-left: 1rem;
 `;
 
-const Header = styled.div``;
+const Header = styled.div`
+  transition: padding var(--ha-transition-duration) var(--ha-easing);
+`;
 const Title = styled.h3``;
 
 type OmitProperties =
@@ -90,7 +95,7 @@ export interface GroupProps extends Omit<CardBaseProps, OmitProperties> {
   /** fired when the group header section is clicked */
   onClick?: (event: React.MouseEvent<HTMLElement, MouseEvent>) => void;
 }
-function _Group({
+function InternalGroup({
   title,
   description,
   children,
@@ -117,7 +122,7 @@ function _Group({
       disableActiveState
       disableRipples
       borderRadius={"16px"}
-      className={`${className ?? ""} group`}
+      className={`${className ?? ""} ${_collapsed ? "collapsed" : "expanded"} group`}
       collapsed={_collapsed}
       collapsible={collapsible}
       {...rest}
@@ -134,36 +139,17 @@ function _Group({
         <Title className="title">{title}</Title>
         {description && <Description>{description}</Description>}
       </Header>
-
-      <AnimatePresence initial={false}>
-        {(!collapsible || !_collapsed) && (
-          <motion.section
-            className="content"
-            style={{
-              overflow: "hidden",
-            }}
-            key={`content-${title}`}
-            initial="collapsed"
-            animate="open"
-            exit="collapsed"
-            variants={{
-              open: { opacity: 1, height: "auto" },
-              collapsed: { opacity: 0, height: 0 },
-            }}
-            transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
-          >
-            {layout === "row" ? (
-              <Row className="row" {...cssProps}>
-                {children}
-              </Row>
-            ) : (
-              <Column className="column" {...cssProps}>
-                {children}
-              </Column>
-            )}
-          </motion.section>
+      <AutoHeight isOpen={!_collapsed || !collapsible} className="content" onCollapseComplete={() => setCollapsed(true)}>
+        {layout === "row" ? (
+          <Row className="row" {...cssProps}>
+            {children}
+          </Row>
+        ) : (
+          <Column className="column" {...cssProps}>
+            {children}
+          </Column>
         )}
-      </AnimatePresence>
+      </AutoHeight>
     </StyledGroup>
   );
 }
@@ -179,7 +165,7 @@ export function Group(props: GroupProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "Group" })}>
-      <_Group {...defaultColumns} {...props} />
+      <InternalGroup {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

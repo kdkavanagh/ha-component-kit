@@ -1,15 +1,16 @@
-import type { Meta, StoryObj, Args } from "@storybook/react";
-import { ThemeProvider, CameraCard, ButtonBarButton, Column } from "@components";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
+import { ThemeProvider, CameraCard, ButtonBarButton, ThemeControlsModal, Column } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 function Render(args?: Args) {
   return (
     <HassConnect hassUrl="https://homeassistant.local:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Column gap="1rem" fullWidth>
         <CameraCard
           entity="camera.demo_camera"
-          headerSensors={[<ButtonBarButton entity="binary_sensor.vehicle" />, <ButtonBarButton entity="switch.record" />]}
+          headerSensors={[<ButtonBarButton entity="binary_sensor.vehicle" key="a" />, <ButtonBarButton entity="switch.record" key="b" />]}
           {...args}
         />
       </Column>
@@ -18,7 +19,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/CameraCard",
+  title: "components/Cards/CameraCard",
   component: CameraCard,
   tags: ["autodocs"],
   parameters: {
@@ -26,7 +27,7 @@ export default {
   },
 } satisfies Meta<typeof CameraCard>;
 export type LightStory = StoryObj<typeof CameraCard>;
-export const Example: LightStory = {
+export const Docs: LightStory = {
   render: Render,
   args: {},
 };

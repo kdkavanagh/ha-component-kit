@@ -1,5 +1,5 @@
-import { create } from '@storybook/theming/create';
-import { addons } from '@storybook/manager-api';
+import { create } from 'storybook/theming/create';
+import { addons } from 'storybook/manager-api';
 
 const theme = create({
     base: 'dark',
@@ -10,22 +10,29 @@ const theme = create({
 });
 
 addons.setConfig({
-    panelPosition: 'right',
-    showPanel: true,
-    showNav: true,
-    theme
+    bottomPanelHeight: 0,
+    rightPanelWidth: 0,
+    theme,
+    sidebar: {
+      renderLabel(item) {
+        if (item.type === 'root' && item.name === 'core') {
+          return '@hakit/core';
+        }
+        if (item.type === 'root' && item.name === 'components') {
+          return '@hakit/components';
+        }
+        return item.name;
+      }
+    }
+    
 });
-const layout = localStorage.getItem('storybook-layout');
-if (layout) {
-  let storybookConfig = JSON.parse(layout);
-  if (typeof storybookConfig === 'object' && storybookConfig !== null && storybookConfig.resizerNav.x < 320) {
-    storybookConfig.resizerNav.x = 320;
-    localStorage.setItem('storybook-layout', JSON.stringify(storybookConfig));
-    document.location.reload();
+
+
+const context = window.parent ? window.parent.document : document;
+const stylesheet = context.createElement('style');
+stylesheet.innerHTML = `
+  .sidebar-header div img {
+    max-width: 100% !important
   }
-} else {
-  localStorage.setItem('storybook-layout', JSON.stringify({ resizerNav: { x: 320, y: 0 }, resizerPanel: { x: 0, y: 710 } }));
-  document.location.reload();
-}
-
-
+`;
+context.head.appendChild(stylesheet);

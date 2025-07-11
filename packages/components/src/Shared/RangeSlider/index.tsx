@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, ReactNode } from "react";
 import styled from "@emotion/styled";
 import { css } from "@emotion/react";
-import { useDebouncedCallback } from "use-debounce";
+import { useDebouncedCallback, useThrottledCallback } from "use-debounce";
 import { fallback, mq } from "@components";
 import { ErrorBoundary } from "react-error-boundary";
+
+const RangeSliderParent = styled.div``;
 
 const StyledRange = styled.div<{
   handleSize: number;
@@ -162,6 +164,11 @@ export interface RangeSliderProps extends Omit<React.ComponentPropsWithoutRef<"i
   handleSize?: number;
   /** The label for the input @default undefined */
   onChange?: (value: number, event: React.ChangeEvent<HTMLInputElement>) => void;
+  /* The callback function that is called when the user has finished changing the value @default undefined */
+  onChangeComplete?: (value: number, event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Debounce/throttle value @default 300 */
+  debounceThrottleValue?: number;
+  debounceType?: "debounce" | "throttle";
   /** The label for the input @default undefined */
   label?: ReactNode;
   /** The description for the input @default undefined */
@@ -174,7 +181,7 @@ export interface RangeSliderProps extends Omit<React.ComponentPropsWithoutRef<"i
   tooltipSize?: number;
 }
 
-function _RangeSlider({
+function InternalRangeSlider({
   value: _value,
   onChange,
   formatTooltipValue,
@@ -188,6 +195,9 @@ function _RangeSlider({
   min: _min = 0,
   max: _max = 100,
   step: _step = 1,
+  debounceThrottleValue = 300,
+  debounceType = "debounce",
+  onChangeComplete,
   cssStyles,
   ...rest
 }: RangeSliderProps) {
@@ -218,15 +228,24 @@ function _RangeSlider({
     }
   }, [value, _min, _max, _step, formatTooltipValue, hideTooltip]);
 
-  const debouncedOnChange = useDebouncedCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    if (typeof onChange === "function") {
-      onChange(event.target.valueAsNumber, event);
-    }
-    setActive(false);
-  }, 300);
+  const callType = debounceType === "debounce" ? useDebouncedCallback : useThrottledCallback;
+
+  const debouncedOnChange = callType(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (typeof onChangeComplete === "function") {
+        onChangeComplete(event.target.valueAsNumber, event);
+      }
+      setActive(false);
+    },
+    debounceThrottleValue,
+    {
+      leading: true,
+      trailing: true,
+    },
+  );
 
   return (
-    <div
+    <RangeSliderParent
       className={`${className ?? ""} ${active ? "active" : ""} range-slider`}
       style={{ position: "relative", ...(style ?? {}) }}
       css={css`
@@ -250,6 +269,9 @@ function _RangeSlider({
             if (!active) setActive(true);
           }}
           onChange={(event) => {
+            if (typeof onChange === "function") {
+              onChange(event.target.valueAsNumber, event);
+            }
             debouncedOnChange(event);
           }}
         />
@@ -267,7 +289,7 @@ function _RangeSlider({
           </div>
         )}
       </StyledRange>
-    </div>
+    </RangeSliderParent>
   );
 }
 
@@ -275,7 +297,7 @@ function _RangeSlider({
 export function RangeSlider(props: RangeSliderProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "RangeSlider" })}>
-      <_RangeSlider {...props} />
+      <InternalRangeSlider {...props} />
     </ErrorBoundary>
   );
 }

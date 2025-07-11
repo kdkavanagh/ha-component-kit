@@ -323,6 +323,10 @@ export interface CalendarCardProps extends Omit<CardBaseProps<"div", EntityName>
   timeZone?: string;
   /** the default rendered view @default "dayGridMonth" */
   view?: "dayGridMonth" | "listWeek" | "dayGridDay";
+  /** disables the auto view switching based on the size of the card @default false */
+  disableAutoView?: boolean;
+  /** disables the narrow class/styles from being added when the card is too small @default false */
+  disableNarrow?: boolean;
   /** include the header controls @default true */
   includeHeader?: boolean;
 }
@@ -393,11 +397,13 @@ const defaultFullCalendarConfig: CalendarOptions = {
   },
 };
 
-function _CalendarCard({
+function InternalCalendarCard({
   entities,
   className,
   timeZone,
   view,
+  disableAutoView = false,
+  disableNarrow = false,
   includeHeader = true,
   cssStyles,
   key,
@@ -507,22 +513,25 @@ function _CalendarCard({
       if (calRef.current) {
         const calendarApi = calRef.current.getApi();
         calRef.current.requestResize();
-        if (width < 400 && calendarApi.view.type !== "listWeek") {
-          changeView((api) => {
-            api.setOption("eventDisplay", "auto");
-            api.changeView("listWeek");
-            setActiveView("listWeek");
-          });
-          if (!narrow) {
+        if (width < 400) {
+          // only change the view if it's not already in listWeek, and not defined as an input prop
+          if (!disableAutoView && calendarApi.view.type !== "listWeek") {
+            changeView((api) => {
+              api.setOption("eventDisplay", "auto");
+              api.changeView("listWeek");
+              setActiveView("listWeek");
+            });
+          }
+          if (!narrow && !disableNarrow) {
             setNarrow(true);
           }
         }
-        if (width >= 400 && narrow) {
+        if (width >= 400 && narrow && !disableNarrow) {
           setNarrow(false);
         }
       }
     },
-    [narrow, changeView],
+    [narrow, disableAutoView, disableNarrow, changeView],
   );
   useEffect(() => {
     if (width) {
@@ -755,7 +764,7 @@ function _CalendarCard({
 /**
  * The CalendarCard is very similar to the home assistant calendar card, with the exception of not having delete/edit event functionality, the preview here contains only a month (the current month) of fake events to preview the functionality
  *
- * This component uses the REST API to retrieve events from home assistant, ensure you've followed the instructions [here](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/hooks-usehass-callapi--docs)
+ * This component uses the REST API to retrieve events from home assistant, ensure you've followed the instructions [here](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-usehass-hass-callapi--docs)
  * */
 export function CalendarCard(props: CalendarCardProps) {
   const defaultColumns: AvailableQueries = {
@@ -768,7 +777,7 @@ export function CalendarCard(props: CalendarCardProps) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "CalendarCard" })}>
-      <_CalendarCard {...defaultColumns} {...props} />
+      <InternalCalendarCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

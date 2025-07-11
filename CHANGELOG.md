@@ -1,3 +1,242 @@
+# 5.1.0
+
+### @hakit/components
+- NEW - Modal position - Now positioned centered within the screen vertically
+- BREAKING - `framer-motion` has been removed entirely as a core dependency, this was previously used to animate the modals and other components, most of the main animations are still supported visually, the main ones that will change are the expand/collapse scale animation from the card to the modal, Custom logic for the Group component to maintain the "expand" / "collapse" animations, Added custom scale functionality to mimic what framer-motion does with whileTap - solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/209)
+- BREAKING - `breakpoints`, `setBreakpoints` have been moved to the themeStore and out of @hakit/core, nothing in @hakit/core consumes or uses these values, so it makes sense to move to the components package and set via the ThemeProvider
+- NEW - Breakpoints can now be disabled or edited with a smaller pool of breakpoints, or no breakpoints at all, this is useful if you're using a custom theme and want to disable the breakpoints entirely, or if you want to use a smaller set of breakpoints without having to configure all of them. This has all been documented in storybook - solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/244)
+
+### @hakit/core
+- IMPROVEMENT - Error handling on setBreakpoints if the user provided invalid breakpoint values as values should be provided in a linear format
+- PERFORMANCE - optimisation to useBreakpoint, now state will only update when any of the matches change
+- BUGFIX - If switching window context dynamically, the window match logic will not work and will have to shift midway, this has been addressed
+- NEW - introduced onDisconnect callback for HassConnect options
+- NEW - Added retry connection functionality when the connection is lost for long running dashboards
+- NEW - Locale functionality moved to it's own component to fetch these before render
+- NEW - useUser - a new hook to return the current user of the dashboard logged in at the time - [issue](https://github.com/shannonhochkins/ha-component-kit/issues/253)
+- NEW - Updated locales to match latest home assistant release
+
+
+### General
+
+- CHORE - Updated storybook to latest
+- DOCS - Added documentation to related hooks and methods to retrieve a user, useUser hook exposed, and getUser method still available from useHass
+- DOCS - Simplified other related docs
+- DOCS - Documented custom breakpoints
+
+
+# 5.0.9
+
+### @hakit/components
+
+- NEW - TimeCard - when no time/date entity is provided, by default it will use the browsers time and date, this also uses a custom formatter to format the custom date string, previously the custom formatters only allowed you to specify strings per identifier, now you can return a ReactNode meaning we can have the same formatting behavior as if we have an entity (AM/PM suffix now wrapped in different styles.)
+- BREAKING - TimeCard - Unlikely breaking change for users unless you're potentially using css selectors targeting the h4 element in time cards, the h4 element is now a span to avoid nesting h4 elements after introducing the above feature.
+- IMPROVEMENT - Tooltip - A previously unknown behavior as something changed along the way, all tooltips were rendered on the page even before interacting with elements, and also continuously updating position on window resize, now tooltip elements are only created when interacting with the element with the tooltip, and removed from the dom after the interaction is complete, this should reduce the amount of elements on the page and improve performance.
+
+### @hakit/core
+- useEntity - more issues with the useEntity hook causing delays in updates, the hook behind the scenes was using a debounce not a throttle which was not intended behavior, this seems to have resolved syncing issues with storybook and the actual dashboard. [fixes](https://github.com/shannonhochkins/ha-component-kit/issues/248)
+
+
+# 5.0.8
+
+### @hakit/components
+
+- BUGFIX - Breakpoints - A previous release caused the breakpoint logic to break, there was also another related bug where if breakpoints were provided to the ThemeProvider, it would cause a recursive update as there was a mis-match between the internal and input objects - fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/239)
+- MediaPlayerCard, ControlSliderCircular, ClimateControls, RangeSlider - all now update with the trailing edge first as these also had a similar problem to the useEntity hook mentioned below.
+
+
+### @hakit/core
+- useEntity - issue with throttle controls acting like a delay, it will now taking the trailing/leading edge and initial updates will be immediate, default throttle time dropped from 150ms to 25ms, other components will also see a speed up in updates in the UI with this change, thanks for reporting @maumi - fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/242)
+- useWeather, useLogs - also updated with incorrect throttle options
+
+# 5.0.7
+
+### @hakit/components
+
+- BUGFIX - CalendarCard - Logic to swap out the view only when the view prop was undefined was a bit of a premature optimization, there's now two additional props `disableNarrow` and `disableAutoView` to disable the logic independently, fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/231)
+
+### @hakit/core
+- No changes, alignment with components package so versions are aligned
+
+# 5.0.6
+
+### @hakit/components
+- NEW - ThemeProvider - Overhaul on state management, now uses a store to manage the theme, this will reduce re-renders and allow you to programmatically change the theme from anywhere in your application, this is also exposed as a hook `useThemeStore` to allow you to change the theme from anywhere in your application if need be.
+- BREAKING - ThemeProvider.includeThemeControls - This prop is most likely never used for production dashboards, it's been removed as part of this release, if you still want to use the ThemeControls you can import the ThemeControlsModal component directly from the components package and include adjacent to the ThemeProvider.
+- BUGFIX - SidebarCard - The TimeCard included in the header of the timecard had a hover effect that was introduced in a previous release, this has been removed.
+- NEW - TimeCard - `timeEntity` and `dateEntity` now available as new props to specify custom date/time entities if need be.
+- BUGFIX - LightControls - When a light entity didn't support color, the slider would appear in a grey scale colour, it will now naturally appear rendering an average kelvin value. fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/226)
+- BUGFIX - CalendarCard - When specifying a default view via the `view` prop, the internal logic (when the component was < 400px wide) would reset the view to week view, it will only do this logic now if a view prop was not specified, fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/231)
+
+
+### @hakit/core
+- BUGFIX - useEntity will now return a kelvin value for a light that doesn't support color, previously it would return the default colour for the "off" state.
+- Locales & types updated to align with latest home assistant version
+
+### NPM CREATE v1.1.12
+- Deploy script was missing `prompts` package when creating the template, thanks for reporting @maumi, fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/229)
+
+### Maintenance
+
+- Upgraded storybook and cleaned up sidebar to reduce redundant secondary pages with a demo
+
+
+# 5.0.5
+
+### @hakit/components
+- No changes, alignment with core package
+
+### @hakit/core
+- Fixed bug with typescript sync where options are empty the types would generate invalid typescript definitions - fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/221)
+
+# 5.0.4
+- Broken release - DO NOT USE
+
+
+# 5.0.3
+
+### @hakit/components
+
+- BUGFIX - `ColumnProps` previously had an incorrect reference to the `flexWrap` types for the `wrap` prop.
+- NEW - windowContext - `HassConnect` can now change the context in which window is used for portals, emotion and more, this is useful if you're rendering your dashboard within an iframe and need to change the context of the window object.
+- NEW - RangeSlider - `onChangeComplete` and `onChange` now available, with the ability to change the throttle/debounce type and the delay which was previously not configurable
+- NEW - Tooltip - Will now pass through props propagated from parent, for example <Menu><Tooltip title="XX"></Menu> previously wouldn't activate the menu as the Menu component binds it's clicks to the child elements, if the refs aren't forwarded correctly it would never bind clicks.
+- NEW - Menu - Improvements to the Menu component used by various cards, now using a much smarter floating menu with a lot more controls around placement and positioning, it also now has overflow support for longer lists and aria attributes now added, additionally i've removed the animated effect for the menu so it's faster to get to the options, just unwanted noise (feedback taken onboard by users)
+- NEW - LightControls - Added support for light effects in popup for all light cards if supported by the entity (demo added to storybook) fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/208)
+- NEW - Previously, all components were excluding the `ref` prop even though we forward them properly, this has been fixed and now all components will accept the `ref` prop and forward it to the correct element.
+- BUGFIX - ThemeProvider - Previously wouldn't allow you to dynamically control the theme props, they were only read once, this has been fixed.
+
+
+### @hakit/core
+- locales - updated to match latest release
+- BUGFIX - useEntity - previously if you provided an invalid entity name to useEntity dynamically from a parent component, it would never update it's internal reference to the entity, this may not have been causing issues for users as it's quite an obscure workflow unless you're building some sort of search functionality. fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/213)
+
+### NPM CREATE v1.1.11
+
+- NEW - sync script now moved to the `scripts` directory and also updated package.json reference.
+
+1. By default, the VITE_HA_TOKEN will now be stored in a .env.development file which is only used by local development and the sync script.
+2. When building with vite, it will not bundle your token with the application code.
+3. If you wish to change this behavior, you can simply add the token back into the .env. file.
+
+If you still attempt to deploy and the deploy script detects a reference to the token, you'll be prompted to confirm this process.
+
+Fixes [issue](https://github.com/shannonhochkins/ha-component-kit/issues/211)
+
+# 5.0.2
+
+### @hakit/components
+- BUGFIX - [WeatherCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-weathercard--docs) - When the WeatherCard was used in the dashboard, and enabled in the sidebar, the forecast columns would animate in/out from card to card, this is no longe an issue and solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/189)
+- NEW - Massive improvements to the initial load of the dashboard, it will now loading blazingly fast, and no longer animates into position, now the dashboard will load all cards in place as they should - this solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/179)
+- NEW - Modal animations - previously this would animate and scale in from the card that triggered the action, by default this animation style has changed to a simple slide up/slide down. If you still wish to retain this functionality, you can do this by passing the `layoutId` prop to the card that triggers the modal, and add the same value to the modalProps.id for the card, or manually if you wish there's an example [here](https://shannonhochkins.github.io/ha-component-kit/?path=/story/components-shared-modal--auto-scale-from-source).
+- BUGFIX - [MediaPlayerCard](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/components-cards-mediaplayercard--docs) - The layout inside the popup for group controls was broken, this has been fixed, the default "slider" for volume controls has been changed to buttons for easier use.
+
+
+### @hakit/core
+- NEW - [useConfig](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-useconfig--docs) - A new hook designed to subscribe to the configuration updates from the instance, previously this would only retrieve the configuration from the store, and it would only ever load once.
+- NEW - [useHaStatus](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-usehastatus--docs) - A hook that will return a STRING indicating the current status of your home assistant instance - solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/177)
+- NEW - [useLightTemperature](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-uselighttemperature--docs) - A previously undocumented hook to return the temperature of a light entity, this will return the temperature in Kelvin, if the light doesn't support temperature, it will return undefined, if you want to convert the kelvin value to rgb, there's a `temperature2rgb` method that's also exported from core.
+- NEW - [useLightColor](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-uselightcolor--docs) - A previously undocumented hook to return the color of a light entity, this will return the color in HS format, if the light doesn't support color, it will return undefined, if you want to convert to RGB you can use the `hs2rgb` method that's also exported from core.
+- NEW - [useLightBrightness](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-hooks-uselightbrightness--docs) - A previously undocumented hook to return the brightness of a light entity, this will return the brightness in a number format, if the light doesn't support brightness, it will return undefined.
+- BUGFIX - The typescript sync command had an obscure bug where if the field name contained a property of an object, in this case "constructor" the typescript output would be invalid, this solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/194)
+ - NEW - There's a wide range of [helpers](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-helpers--docs) that were previously undocumented, All the relevant/useful helpers have been documented.
+ - NEW - There's a wide range of [constants](https://shannonhochkins.github.io/ha-component-kit/?path=/docs/core-constants--docs) available which were previously undocumented
+
+### NPM CREATE v1.1.10
+
+- The .nvmrc file will now have the current version of node that was used by the user, previously this was hard coded to version 20 - solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/191)
+
+### Maintenance
+- Huge amount of documentation improvements, a lot more examples and structured documentation.
+- Locales updated for core from latest HA version.
+
+
+# 5.0.1
+
+### @hakit/components
+- FEATURE/BUGFIX - ClimateCard and related components previously had hard coded "step" values when incrementing temperature, now it will use the step value provided by the entity by default, allow you to override the step value or fallback to 0.5 for Celsius and 1 for Fahrenheit
+
+### @hakit/core
+- No changes, bumping version to align with components package.
+
+# 5.0.0
+
+### Migration from v4 to v5
+
+1. Update react/react-dom to v19 and any other required dependencies.
+2. As mentioned below under @hakit/core, any calls to services will need their arguments updated.
+```ts
+// v4
+const light = useService('light');
+// notice the argument order
+light.getEvents('light.some_light', {
+  color_name: 'aliceblue',
+});
+
+// v5
+const light = useService('light');
+// arguments now part of an object as first argument
+light.getEvents({
+  target: 'light.some_light',
+  serviceData: {
+    color_name: 'aliceblue',
+  },
+});
+```
+3. If you're using the `ServiceFunction` type directly you'll now need to add `object` or a defined return type as the first generic argument
+
+```ts
+// v4
+const events = ServiceFunction<Target, ActionData>;
+// v5
+const events ServiceFunction<ReturnData, Target, ActionData>;
+```
+
+### @hakit/core
+- IMPROVEMENT - locales updated to match changes with latest home assistant
+- IMPROVEMENT - supported-types.ts have been updated to fix a lot of incorrect types, it's also included more descriptions above parameters in the generated types file, if you're using the `ServiceFunction `type directly you will have to add `object` or a defined response type  in the first generic input as mentioned above in mgration notes.
+- IMPROVEMENT - authentication flow has been cleaned up a bit, there's now also an additional flow that will automatically re-use the connection exposed by home assistant if running within an iframe within home assistant which should speed up authentication - solves [issue](https://github.com/shannonhochkins/ha-component-kit/issues/176)
+
+- BREAKING - useService - now accepts a "returnResponse" option, if a service does indeed return a response, enabling this flag will send back the response over the sockets.
+
+The arguments for services have changed to a single object argument for consistency with the `callService` method, see changes above in the migration steps, all changes are documented in all three ways of triggering a service (useEntity, useService, and callService).
+
+Examples of returning a response from a service:
+
+```ts
+interface CalendarEvent {
+  start: string;
+  end: string;
+  description: string;
+  summary: string;
+}
+const calendar = useService('calendar');
+const { response, context } = await calendar.getEvents<{
+  ['calendar.some_calendar']: {
+    events: CalendarEvent[];
+  }
+}>({
+  target: 'calendar.some_calendar',
+  serviceData: {
+    start: '2021-01-01',
+    end: '2021-01-31',
+  },
+  returnResponse: true,
+});
+console.log(context, response['calendar.some_calendar'].events);
+```
+Thanks to @kdkavanagh for the base work for this and the [idea](https://github.com/shannonhochkins/ha-component-kit/pull/172)!
+
+### @hakit/components
+- TimeCard - Improvements to formatting function thanks to @kdkavanagh - can now add `th,nd,rd,st` suffix using format string patterns. [see](https://github.com/shannonhochkins/ha-component-kit/pull/174)
+- Updating some types to align with React 19 changes.
+
+### Contributor improvements
+- Added new eslint configuration & rules
+- Improved speed of build by updating most of the dependencies used
+- Github action now validates types before deploying
+- Added notes on how to pack the packages locally for testing
+
 # 4.0.4
 
 ## @hakit/components
@@ -86,7 +325,7 @@ BREAKING - ButtonCard - swapped title and description on ButtonCard, it's always
 - BUGFIX - ThemeProvider - There is new hsla variables exposed, and some of the colours didn't expose these values - this has been fixed, additionally an [issue](https://github.com/shannonhochkins/ha-component-kit/issues/154) as been fixed that was causing a flashing effect with the controls.
 
 ## @hakit/core
-- BUGFIX - Fixed a bug where the hassUrl provided may have contained a trailing slash and was stored without it, it will now sanitize the input url to ensure it's stored correctly. [issue](https://github.com/shannonhochkins/,ha-component-kit/issues/146#issuecomment-2138352567), the `useTranslations` hook has also been removed.
+- BUGFIX - Fixed a bug where the hassUrl provided may have contained a trailing slash and was stored without it, it will now sanitize the input url to ensure it's stored correctly. [issue](https://github.com/shannonhochkins/ha-component-kit/issues/146#issuecomment-2138352567), the `useTranslations` hook has also been removed.
 - NEW - `useLocale`, `useLocales` - a hook to retrieve the locales, useLocale is similar in nature to the `locale` function, useLocales will return all available locales from home assistant.
 - DEPRECATED/BREAKING - Removed `fetchTranslations` and replaced with multilingual support, this was previously used to fetch translations from home assistant, now this is done automatically through the `localize` method.
 - DEPRECATED/BREAKING - Removed `useTranslations` as this is now handled with the `localize` method.
@@ -113,7 +352,7 @@ BREAKING - ButtonCard - swapped title and description on ButtonCard, it's always
 
 # 3.2.0
 ## @hakit/components
-- NEW VacuumCard - A new card to interact with vacuum entities, this card will show the current state of the vacuum, the battery level, the current cleaning status and the ability to start, pause, stop and return to dock. It provides the ability to create custom shortcuts and much more, you can long press on the card to display the new custom popup. Demo available on the main [demo](https://shannonhochkins.github.io/ha-component-kit/iframe.html?args=&id=introduction-demo--default&viewMode=story#) page.
+- NEW VacuumCard - A new card to interact with vacuum entities, this card will show the current state of the vacuum, the battery level, the current cleaning status and the ability to start, pause, stop and return to dock. It provides the ability to create custom shortcuts and much more, you can long press on the card to display the new custom popup. Demo available on the main [demo](https://shannonhochkins.github.io/ha-component-kit/iframe.html?args=&id=introduction-demo--demo&viewMode=story) page.
 - NEW - ModalProvider - a new provider to wrap your application to control global animations, full examples and information is available in the [documentation](https://shannonhochkins.github.io/ha-component-kit) link. Here you can also provide custom animations for the modals, disable complex animations, animate the modal, header and content of the modal independently with framer-motion.
 - BUGFIX - Modal animations were broken in the previous version, this has been fixed and now the animations are working as expected. Additionally, the documentation mentioned the default duration of animations was 0.25s however I noticed the default was actually set to 1s making animations and interactions feel sluggish and slow.
 - BUGFIX - Modal animations previously had a glitch where it was expanding and zooming in whilst closing, this has been fixed

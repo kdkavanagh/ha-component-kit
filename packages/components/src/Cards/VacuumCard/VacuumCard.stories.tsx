@@ -1,4 +1,4 @@
-import type { Meta, StoryObj, Args } from "@storybook/react";
+import type { Meta, StoryObj, Args } from "@storybook/react-vite";
 import { ThemeProvider, Row, VacuumCard } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
@@ -16,7 +16,7 @@ function Render(args?: Args) {
 }
 
 export default {
-  title: "COMPONENTS/Cards/VacuumCard",
+  title: "components/Cards/VacuumCard",
   component: VacuumCard,
   tags: ["autodocs"],
   parameters: {
@@ -24,7 +24,7 @@ export default {
   },
 } satisfies Meta<typeof VacuumCard>;
 export type VacuumStory = StoryObj<typeof VacuumCard>;
-export const VacuumCardExample: VacuumStory = {
+export const Docs: VacuumStory = {
   render: Render,
   args: {},
 };
@@ -45,7 +45,9 @@ export const CustomShortcuts: VacuumStory = {
         icon: "mdi:fan",
         onClick(entity) {
           entity.service.setFanSpeed({
-            fan_speed: "high",
+            serviceData: {
+              fan_speed: "high",
+            },
           });
         },
       },

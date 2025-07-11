@@ -8,13 +8,13 @@ import { fallback } from "../../Shared/ErrorBoundary";
 
 const StyledSensorCard = styled(ButtonCard)``;
 
-type OmitProperties = "as" | "active" | "ref" | "entity";
+type OmitProperties = "as" | "active" | "entity";
 export interface SensorCardProps<E extends EntityName> extends Omit<ButtonCardProps<E>, OmitProperties> {
   /** the entity to display */
   entity: E;
 }
 
-function _SensorCard<E extends EntityName>({
+function InternalSensorCard<E extends EntityName>({
   entity: _entity,
   className,
   cssStyles,
@@ -60,7 +60,7 @@ export function SensorCard<E extends EntityName>(props: SensorCardProps<E>) {
   };
   return (
     <ErrorBoundary {...fallback({ prefix: "SensorCard" })}>
-      <_SensorCard {...defaultColumns} {...props} />
+      <InternalSensorCard {...defaultColumns} {...props} />
     </ErrorBoundary>
   );
 }

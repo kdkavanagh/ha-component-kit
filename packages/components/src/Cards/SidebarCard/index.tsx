@@ -4,7 +4,6 @@ import { css, Global } from "@emotion/react";
 import { Icon } from "@iconify/react";
 import { useHass } from "@hakit/core";
 import { TimeCard, WeatherCard, Row, Column, fallback, mq, useBreakpoint } from "@components";
-import { motion, AnimatePresence, MotionProps } from "framer-motion";
 import type { WeatherCardProps, TimeCardProps } from "@components";
 import { ErrorBoundary } from "react-error-boundary";
 
@@ -22,7 +21,15 @@ const StyledTimeCard = styled(TimeCard)<{
     box-shadow: none;
     background: transparent;
   }
-  h4 {
+  &:not(.disabled):not(:disabled):not(:focus):hover {
+    box-shadow: none;
+    background: transparent;
+    color: var(--ha-S200-contrast) svg {
+      color: var(--ha-S200-contrast);
+    }
+  }
+  .time,
+  .time-suffix {
     transition: var(--ha-transition-duration) var(--ha-easing);
     transition-property: font-size;
   }
@@ -30,13 +37,13 @@ const StyledTimeCard = styled(TimeCard)<{
     !props.open &&
     `
     padding: 0.5rem 0;
-    h4 {
+    .time, .time-suffix {
       font-size: 0.7rem;
     }
   `}
 `;
 
-const StyledSidebarCard = styled(motion.div)`
+const StyledSidebarCard = styled.div`
   background-color: var(--ha-S50);
   display: flex;
   flex-direction: column;
@@ -45,7 +52,7 @@ const StyledSidebarCard = styled(motion.div)`
   height: 100%;
   justify-content: flex-start;
   transition: var(--ha-transition-duration) var(--ha-easing);
-  transition-property: left;
+  transition-property: left, max-width, width;
   transform-origin: left center;
   gap: 1rem;
   > * {
@@ -64,7 +71,7 @@ const StyledSidebarCard = styled(motion.div)`
   )}
 `;
 
-const Menu = styled(motion.ul)<{
+const Menu = styled.ul<{
   open: boolean;
 }>`
   padding: 0;
@@ -238,9 +245,7 @@ export interface MenuItem {
   /** onClick action to fire when the menu item is clicked  */
   onClick: (event: React.MouseEvent<HTMLLIElement>) => void;
 }
-
-type Extendable = Omit<React.ComponentProps<"div">, "ref"> & MotionProps;
-export interface SidebarCardProps extends Extendable {
+export interface SidebarCardProps extends React.ComponentProps<"div"> {
   /** should the time card be included by default @default true */
   includeTimeCard?: boolean;
   /** should the sidebar start opened,  True by default if collapsible=false @default true */
@@ -260,7 +265,7 @@ export interface SidebarCardProps extends Extendable {
   /** a method to apply a sort function to the sidebar menu items before they render */
   sortSidebarMenuItems?: (a: MenuItem, b: MenuItem) => number;
 }
-function _SidebarCard({
+function InternalSidebarCard({
   weatherCardProps,
   timeCardProps = {
     hideIcon: true,
@@ -277,6 +282,7 @@ function _SidebarCard({
   cssStyles,
   sortSidebarMenuItems,
   key,
+  style,
   ...rest
 }: SidebarCardProps) {
   const [open, setOpen] = useState(startOpen);
@@ -329,11 +335,11 @@ function _SidebarCard({
           ${cssStyles ?? ""}
         `}
         className={`${className ?? ""} sidebar-card`}
-        animate={{
+        style={{
+          ...style,
           width: "100%",
           maxWidth: open ? `var(--ha-device-sidebar-card-width-expanded, 19rem)` : `var(--ha-device-sidebar-card-width-collapsed, 5rem)`,
         }}
-        initial={false}
         {...rest}
       >
         <Column className="column" wrap="nowrap" fullHeight fullWidth alignItems="flex-start" justifyContent="space-between">
@@ -347,33 +353,19 @@ function _SidebarCard({
               }}
             >
               {includeTimeCard && (
-                <StyledTimeCard
-                  disableColumns
-                  key="sidebar-large-time-card"
-                  className="sidebar-time-card"
-                  open={open}
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  exit={{
-                    opacity: 0,
-                    scale: 0,
-                  }}
-                  {...timeCardProps}
-                />
+                <StyledTimeCard disableColumns key="sidebar-large-time-card" className="sidebar-time-card" open={open} {...timeCardProps} />
               )}
               {collapsible && (
                 <HamburgerMenu
                   open={open}
                   className="hamburger-menu"
                   key="hamburger-menu-open"
-                  animate={{
+                  style={{
                     width: devices.xxs || devices.xs ? "auto" : !open ? "100%" : "40%",
                     position: devices.xxs || devices.xs ? "fixed" : "relative",
                   }}
                 >
-                  <motion.li
+                  <li
                     onClick={(event) => {
                       event.stopPropagation();
                       setOpen(!open);
@@ -386,63 +378,49 @@ function _SidebarCard({
                     >
                       <Icon className="icon" icon={open ? "mdi:close" : "mdi:menu"} />
                     </a>
-                  </motion.li>
+                  </li>
                 </HamburgerMenu>
               )}
             </Row>
             <Divider className="divider" />
             <Menu open={open} className="menu">
-              <AnimatePresence>
-                {concatenatedMenuItems.map((item, index) => {
-                  return (
-                    <motion.li
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        item.onClick(event);
-                      }}
-                      key={index}
-                      className={item.active ? "active" : "inactive"}
-                    >
-                      <a>
-                        {typeof item.icon === "string" ? <Icon className="icon" icon={item.icon} /> : item.icon}
-                        {open && (
-                          <div className="menu-inner">
-                            {item.title}
-                            {item.description && <span>{item.description}</span>}
-                          </div>
-                        )}
-                      </a>
-                    </motion.li>
-                  );
-                })}
-              </AnimatePresence>
+              {concatenatedMenuItems.map((item, index) => {
+                return (
+                  <li
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      item.onClick(event);
+                    }}
+                    key={index}
+                    className={item.active ? "active" : "inactive"}
+                  >
+                    <a>
+                      {typeof item.icon === "string" ? <Icon className="icon" icon={item.icon} /> : item.icon}
+                      {open && (
+                        <div className="menu-inner">
+                          {item.title}
+                          {item.description && <span>{item.description}</span>}
+                        </div>
+                      )}
+                    </a>
+                  </li>
+                );
+              })}
             </Menu>
             {children && open && <Filler className="filler">{children}</Filler>}
           </Filler>
-          <AnimatePresence mode="wait">
-            {weatherCardProps && (
-              <motion.div
-                className="weather-wrapper"
-                key="sidebar-weather-large"
-                animate={{
-                  width: "100%",
-                  padding: open ? "0 1rem 1rem" : "0",
-                }}
-              >
-                <WeatherCardCustom
-                  disableColumns
-                  className="weather-card-sidebar"
-                  open={open}
-                  initial={{ opacity: 0 }}
-                  animate={{
-                    opacity: 1,
-                  }}
-                  exit={{ opacity: 0 }}
-                  {...weatherCardProps}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {weatherCardProps && (
+            <div
+              className="weather-wrapper"
+              key="sidebar-weather-large"
+              style={{
+                width: "100%",
+                padding: open ? "0 1rem 1rem" : "0",
+              }}
+            >
+              <WeatherCardCustom disableColumns className="weather-card-sidebar" open={open} {...weatherCardProps} />
+            </div>
+          )}
         </Column>
       </StyledSidebarCard>
     </>
@@ -452,7 +430,7 @@ function _SidebarCard({
 export function SidebarCard(props: SidebarCardProps) {
   return (
     <ErrorBoundary {...fallback({ prefix: "SidebarCard" })}>
-      <_SidebarCard {...props} />
+      <InternalSidebarCard {...props} />
     </ErrorBoundary>
   );
 }

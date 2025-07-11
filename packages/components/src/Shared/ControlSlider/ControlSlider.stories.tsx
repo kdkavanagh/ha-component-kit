@@ -1,13 +1,13 @@
 import { useRef } from "react";
-import type { Meta, StoryObj } from "@storybook/react";
-import { ThemeProvider, ControlSlider, Row, Column } from "@components";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+import { ThemeProvider, ControlSlider, Row, Column, ThemeControlsModal } from "@components";
 import type { ControlSliderProps } from "@components";
 import { HassConnect } from "@hass-connect-fake";
 
 interface SliderProps {
   value: number;
   thickness: number;
-  ref: React.RefObject<HTMLDivElement>;
+  ref: React.RefObject<HTMLDivElement | null>;
   sliderColor?: [number, number, number];
 }
 
@@ -44,7 +44,8 @@ function Template(args?: Partial<ControlSliderProps>) {
   ] satisfies SliderProps[];
   return (
     <HassConnect hassUrl="http://localhost:8123">
-      <ThemeProvider includeThemeControls />
+      <ThemeProvider />
+      <ThemeControlsModal />
       <Row gap={"1rem"} fullWidth>
         {sliders.map(({ value, thickness, sliderColor, ref }, index) => (
           <Column key={index} gap="0.5rem">
@@ -69,7 +70,7 @@ function Template(args?: Partial<ControlSliderProps>) {
 }
 
 export default {
-  title: "COMPONENTS/Shared/ControlSlider",
+  title: "components/Shared/ControlSlider",
   component: ControlSlider,
   tags: ["autodocs"],
   parameters: {
@@ -77,7 +78,7 @@ export default {
   },
 } satisfies Meta<typeof ControlSlider>;
 export type TimeStory = StoryObj<typeof ControlSlider>;
-export const ControlSliderExample: TimeStory = {
+export const Docs: TimeStory = {
   render: Template,
   args: {},
 };
