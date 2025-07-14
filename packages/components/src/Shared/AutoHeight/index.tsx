@@ -1,4 +1,5 @@
 import React, { useRef, useState, useLayoutEffect } from "react";
+import { useEffect } from "react";
 
 type AutoHeightProps = {
   isOpen: boolean;
@@ -14,6 +15,7 @@ export const AutoHeight = ({ isOpen, children, duration = 300, className, style,
   const [renderChildren, setRenderChildren] = useState(isOpen);
   const [shouldAnimate, setShouldAnimate] = useState(true);
   const hasMountedRef = useRef(false);
+  const [wasOpen, setWasOpen] = useState(false);
 
   // Ensure children are present before measuring during expand
   useLayoutEffect(() => {
@@ -37,21 +39,23 @@ export const AutoHeight = ({ isOpen, children, duration = 300, className, style,
 
     if (isOpen) {
       setRenderChildren(true);
-      el.style.height = "0px";
+      if (!wasOpen) {
+        el.style.height = "0px";
 
-      requestAnimationFrame(() => {
-        const scrollHeight = el.scrollHeight;
-        setShouldAnimate(true);
-        el.style.transition = `height ${duration}ms ease`;
-        el.style.height = `${scrollHeight}px`;
+        requestAnimationFrame(() => {
+          const scrollHeight = el.scrollHeight;
+          setShouldAnimate(true);
+          el.style.transition = `height ${duration}ms ease`;
+          el.style.height = `${scrollHeight}px`;
 
-        const timeout = setTimeout(() => {
-          el.style.transition = "";
-          el.style.height = "auto";
-        }, duration);
+          const timeout = setTimeout(() => {
+            el.style.transition = "";
+            el.style.height = "auto";
+          }, duration);
 
-        return () => clearTimeout(timeout);
-      });
+          return () => clearTimeout(timeout);
+        });
+      }
     } else {
       const currentHeight = el.scrollHeight;
       el.style.height = `${currentHeight}px`;
@@ -69,7 +73,11 @@ export const AutoHeight = ({ isOpen, children, duration = 300, className, style,
         return () => clearTimeout(timeout);
       });
     }
-  }, [isOpen, duration, onCollapseComplete]);
+  }, [isOpen, wasOpen, duration, onCollapseComplete]);
+
+  useEffect(() => {
+    setWasOpen(isOpen);
+  }, [isOpen]);
 
   return (
     <div
@@ -77,7 +85,7 @@ export const AutoHeight = ({ isOpen, children, duration = 300, className, style,
       className={className}
       style={{
         overflow: "hidden",
-        height: isOpen && !shouldAnimate ? "auto" : undefined,
+        height: isOpen && (!shouldAnimate || 1 === 1) ? "auto" : undefined,
         ...style,
       }}
     >
