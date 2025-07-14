@@ -4,6 +4,7 @@ import { Row, Column, fallback, CardBase, CardBaseProps, mq, type AvailableQueri
 import { ErrorBoundary } from "react-error-boundary";
 import { AutoHeight } from "../Shared/AutoHeight";
 import { EntityName } from "@core";
+import { useCallback } from "react";
 
 const StyledGroup = styled(CardBase as React.ComponentType<CardBaseProps<"div", EntityName>>)<{
   collapsed: boolean;
@@ -116,6 +117,7 @@ function InternalGroup({
     justifyContent,
     alignItems,
   };
+  const doSetCollapsed = useCallback(() => setCollapsed(true), []);
   return (
     <StyledGroup
       onlyFunctionality
@@ -140,7 +142,7 @@ function InternalGroup({
         <Title className="title">{title}</Title>
         {description && <Description>{description}</Description>}
       </Header>
-      <AutoHeight isOpen={!_collapsed || !collapsible} className="content" onCollapseComplete={() => setCollapsed(true)}>
+      <AutoHeight isOpen={!_collapsed || !collapsible} className="content" onCollapseComplete={doSetCollapsed}>
         {layout === "row" ? (
           <Row className="row" {...cssProps}>
             {children}
