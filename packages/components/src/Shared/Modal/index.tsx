@@ -133,7 +133,6 @@ function InternalModal({
   className,
   cssStyles,
   headerActions,
-  autocloseSeconds = undefined,
   animationDuration = 0.25,
   autocloseSeconds = undefined,
   ...rest
