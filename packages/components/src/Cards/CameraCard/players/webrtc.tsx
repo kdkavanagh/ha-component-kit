@@ -290,10 +290,12 @@ export function WebRTCPlayer({ entity, controls, muted, autoPlay, playsInline, p
 
   useEffect(() => {
     _startWebRtc();
-  }, [_startWebRtc]);
-
-  useEffect(() => {
     const localVideo = _videoEl.current;
+    // Tear down the previous peer connection whenever _startWebRtc changes
+    // identity (e.g. the HA websocket `connection` reference changes on a
+    // reconnect) as well as on unmount. Without this, every reconnect orphans
+    // an RTCPeerConnection + MediaStream + video decoder, which accumulate over
+    // long-running kiosk sessions and progressively degrade performance.
     return () => {
       if (_remoteStream.current) {
         _remoteStream.current.getTracks().forEach((track) => {
@@ -310,7 +312,7 @@ export function WebRTCPlayer({ entity, controls, muted, autoPlay, playsInline, p
         _peerConnection.current = undefined;
       }
     };
-  }, []);
+  }, [_startWebRtc]);
 
   if (error) {
     return <Alert type="error" description={error} />;

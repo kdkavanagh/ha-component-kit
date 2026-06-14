@@ -173,6 +173,7 @@ function InternalWeatherCard({
   allowForecastToggle = true,
   cssStyles,
   key,
+  children,
   ...rest
 }: WeatherCardProps): React.ReactNode {
   const { getConfig } = useHass();
@@ -352,6 +353,7 @@ function InternalWeatherCard({
         )}
         {includeForecast && !isUnavailable && width > 0 && genForecastRows()}
         {isUnavailable && weather.state}
+        {children}
       </Contents>
     </Card>
   );
