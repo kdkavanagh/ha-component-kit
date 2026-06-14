@@ -198,16 +198,6 @@ export interface InternalStore {
   };
 }
 
-// ignore some keys that we don't actually care about when comparing entities
-const shallowEqual = (entity: HassEntity, other: HassEntity): boolean => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { last_changed, last_updated, context, ...restEntity } = entity;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { last_changed: c1, last_updated: c2, context: c3, ...restOther } = other;
-
-  return JSON.stringify(restEntity) === JSON.stringify(restOther);
-};
-
 // Store dedicated to provider-level connection/session bookkeeping (authentication state and active websocket subscriptions)
 export interface HassProviderStore {
   /** whether we've successfully initiated an auth/connect attempt for current hassUrl */
@@ -259,24 +249,16 @@ export const useInternalStore = create<InternalStore>((set, get) => ({
   setWindowContext: (windowContext) => set({ windowContext }),
   setEntities: (newEntities) =>
     set((state) => {
-      let changed = false;
-      const next = { ...state.entities };
-      for (const [id, newEnt] of Object.entries(newEntities)) {
-        const oldEnt = state.entities[id];
-
-        // ---- fast path: first time we ever see this ID ----
-        if (!oldEnt) {
-          next[id] = newEnt;
-          changed = true;
-          continue;
-        }
-
-        if (!shallowEqual(oldEnt, newEnt)) {
-          next[id] = newEnt; // replace only if meaningful props differ
-          changed = true;
-        }
-      }
-      return changed ? { entities: next, lastUpdated: Date.now(), ready: true } : state;
+      // home-assistant-js-websocket already emits a fresh immutable snapshot of ALL
+      // entities on each event, preserving object identity for entities that did not
+      // change. See its processEvent: `const state = { ...store.state }` then it only
+      // replaces the entities present in the update —
+      // https://github.com/home-assistant/home-assistant-js-websocket/blob/9.5.0/lib/entities.ts#L47-L48
+      // Adopt it directly (O(1)) instead of cloning the entire map and running
+      // a JSON.stringify-based shallowEqual on every entity, which was O(N * stateSize)
+      // per event and saturated the main thread on instances with thousands of entities.
+      if (newEntities === state.entities) return state;
+      return { entities: newEntities, lastUpdated: Date.now(), ready: true };
     }),
   connectionStatus: "pending",
   setConnectionStatus: (status) => set({ connectionStatus: status }),
